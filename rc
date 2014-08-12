@@ -1,0 +1,5 @@
+#!/bin/sh -xv
+# system one time tasks
+
+/etc/runit/1
+exec /etc/runit/2
