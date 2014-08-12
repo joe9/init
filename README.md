@@ -1,4 +1,5 @@
 init
 ====
 
-Slightly modified init and added custom gentoo rc
+Slightly modified init
+added custom gentoo rc
