@@ -4,6 +4,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 sync && sync && sync
 
+# rc-service xstart stop
 RUNLEVEL=6 /sbin/rc reboot
 
 # to check out any messages

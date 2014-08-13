@@ -1,9 +1,13 @@
 #!/bin/sh
 
+set -o verbose
+set -o xtrace
+
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 sync && sync && sync
 
+# rc-service xstart stop
 RUNLEVEL=0 /sbin/rc shutdown
 
 # to check out any messages
