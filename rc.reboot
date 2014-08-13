@@ -1,0 +1,12 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+sync && sync && sync
+
+RUNLEVEL=6 /sbin/rc reboot
+
+# to check out any messages
+sleep 5
+
+# vim:filetype=sh tabstop=3 shiftwidth=3 expandtab
