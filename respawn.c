@@ -4,7 +4,7 @@
 */
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
+/* #include <stdio.h> */
 #include <sys/wait.h>
 
 int main (int argc, char *argu[]) {
@@ -16,7 +16,7 @@ int main (int argc, char *argu[]) {
 	(void) argc;
 
 	for (;;) {
-	   printf ("spawning\n");
+/* 	   printf ("spawning\n"); */
 /* 	http://www.cs.cityu.edu.hk/~lwang/fork */
 	   pid = fork ();
 	   if (pid < 0) return EXIT_FAILURE;
