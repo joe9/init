@@ -50,18 +50,18 @@ install: all
 	@mkdir -p $(DESTDIR)$(ETCDIR)
 	@cp -f $(SCRIPTS) $(DESTDIR)$(ETCDIR)
 	@chmod 755 $(DESTDIR)$(ETCDIR)/$(SCRIPTS)
-# 	@echo installing manual page to $(DESTDIR)$(MANDIR)/man8
-# 	@mkdir -p $(DESTDIR)$(MANDIR)/man8
-# 	@sed "s/VERSION/$(VERSION)/g" < init.8 > $(DESTDIR)$(MANDIR)/man8/init.8
-# 	@chmod 644 $(DESTDIR)$(MANDIR)/man8/init.8
+	@echo installing manual page to $(DESTDIR)$(MANDIR)/man8
+	@mkdir -p $(DESTDIR)$(MANDIR)/man8
+	@sed "s/VERSION/$(VERSION)/g" < init.8 > $(DESTDIR)$(MANDIR)/man8/init.8
+	@chmod 644 $(DESTDIR)$(MANDIR)/man8/init.8
 
 uninstall:
 	@echo removing executable from $(DESTDIR)$(SBINDIR)
 	@cd $(DESTDIR)$(SBINDIR) && rm -f $(BIN)
 	@echo removing scripts from $(DESTDIR)$(ETCDIR)
 	@cd $(DESTDIR)$(ETCDIR) && rm -f $(SCRIPTS)
-# 	@echo removing manual page from $(DESTDIR)$(MANDIR)/man8
-# 	@rm -f $(DESTDIR)$(MANDIR)/man8/init.8
+	@echo removing manual page from $(DESTDIR)$(MANDIR)/man8
+	@rm -f $(DESTDIR)$(MANDIR)/man8/init.8
 
 clean:
 	@echo cleaning
