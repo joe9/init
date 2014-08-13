@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 /* int main () { */
 /* using envp as linux kernel sets TERM environment variable which is
@@ -18,6 +19,12 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	sigset_t set;
 	pid_t pid;
 	int status;
+	
+/* 	(void) lines to avoid compiler warnings */
+/* init.c:16:15: warning: unused parameter ‘argc’ [-Wunused-parameter] */
+/* init.c:16:41: warning: unused parameter ‘argv’ [-Wunused-parameter] */
+	(void) argc;
+	(void) argv;
 	
 	if (getpid () != 1) return EXIT_FAILURE;
 	
