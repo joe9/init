@@ -2,8 +2,10 @@
 VERSION = 0.0.1
 
 # paths
-PREFIX = /sbin
-MANPREFIX = $(PREFIX)/share/man
+PREFIX  =
+MANDIR  = ${PREFIX}/share/man
+ETCDIR  = ${PREFIX}/etc
+SBINDIR = ${PREFIX}/sbin
 
 CC = cc
 LD = $(CC)
