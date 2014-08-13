@@ -32,6 +32,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	sigfillset (&set);
 	sigprocmask (SIG_BLOCK, &set, 0);
 	
+/* 	http://www.cs.cityu.edu.hk/~lwang/fork */
 	pid = fork ();
 	if (pid < 0) return EXIT_FAILURE;
 	if (pid > 0) for (;;) wait (&status); /* orphans */

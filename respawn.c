@@ -17,6 +17,7 @@ int main (int argc, char *argu[]) {
 
 	for (;;) {
 	   printf ("spawning\n");
+/* 	http://www.cs.cityu.edu.hk/~lwang/fork */
 	   pid = fork ();
 	   if (pid < 0) return EXIT_FAILURE;
 	   if (pid > 0) waitpid (pid, &c, 0);
