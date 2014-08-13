@@ -3,3 +3,5 @@ respawn
 asynx_spawn
 *.o
 init-*
+hello
+hello.c
