@@ -3,7 +3,7 @@ VERSION = 0.0.1
 
 # paths
 PREFIX  =
-MANDIR  = ${PREFIX}/share/man
+MANDIR  = ${PREFIX}/usr/share/man
 ETCDIR  = ${PREFIX}/etc
 SBINDIR = ${PREFIX}/sbin
 
