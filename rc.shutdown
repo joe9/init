@@ -5,12 +5,12 @@ set -o xtrace
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
-sync && sync && sync
+/bin/sync && /bin/sync && /bin/sync
 
 # rc-service xstart stop
 RUNLEVEL=0 /sbin/rc shutdown
 
 # to check out any messages
-sleep 5
+/usr/bin/sleep 5
 
 # vim:filetype=sh tabstop=3 shiftwidth=3 expandtab
