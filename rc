@@ -1,5 +1,25 @@
-#!/bin/sh -xv
+#!/bin/sh
 # system one time tasks
 
-/etc/runit/1
-exec /etc/runit/2
+# /bin/bash -- if you want to debug, or, could just as well use
+#    init=/bin/bash in kernel command line or in initramfs init
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+RUNLEVEL=S /sbin/rc sysinit
+RUNLEVEL=S /sbin/rc boot
+
+# Do not start services besides tty's if we're running single-user.
+if [ ! -n "$(grep single /proc/cmdline)" ]
+then
+   # taken the below from /etc/rc.multi
+   # /sbin/asynx_spawn /etc/rc.X
+   /sbin/rc default
+fi
+
+for i in {1..5}
+do
+   /sbin/respawn /etc/rc.tty "${i}" &
+done
+
+exit

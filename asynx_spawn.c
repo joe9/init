@@ -1,10 +1,11 @@
 #include <unistd.h>
+#include <stdlib.h>
 
 int main (int argc, char *argu[]) {
 	pid_t pid;
 	int c;
 	pid = fork ();
-	if (pid < 0) return 1;
+	if (pid < 0) return EXIT_FAILURE;
 	if (pid > 0) {
 		waitpid (pid, &c, 0);
 		return c;

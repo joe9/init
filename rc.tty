@@ -1,0 +1,29 @@
+#!/bin/sh
+# /sbin/agetty --noclear 38400 tty5 linux  && /sbin/utmpset -w tty1
+
+i=${1:-1}
+
+# http://wiki.bash-hackers.org/howto/redirection_tutorial
+#exec 2>/dev/null
+#exec 1>/dev/null
+
+# below command avoids these warnings in /var/log/auth
+# Jan 21 19:11:08 master agetty[269]: /dev/tty6: cannot get controlling tty:
+#  Operation not permitted
+# Jan 21 19:11:09 master agetty[269]: /dev/tty6: cannot get controlling tty:
+#  Operation not permitted
+# Jan 21 19:11:09 master agetty[269]: /dev/tty6: cannot set process group:
+#  Inappropriate ioctl for device
+# got this idea from:
+# http://lists.uclibc.org/pipermail/busybox/2010-June/072730.html
+# http://osdir.com/ml/sysutils.supervision.general/2003-07/msg00033.html
+exec /usr/bin/setsid /bin/sh -c "exec /sbin/agetty --noclear tty${i} 38400 linux"
+
+# use the below line if respawn.c does setsid
+# exec /sbin/agetty --noclear 38400 "tty${i}" linux
+
+# below for debugging
+# echo "hello world"
+# exec sleep 10
+# sleep 10
+# exec /usr/bin/setsid /bin/sh -c "exec echo ${1} ${i}"
