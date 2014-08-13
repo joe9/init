@@ -27,3 +27,5 @@ exec /usr/bin/setsid /bin/sh -c "exec /sbin/agetty --noclear tty${i} 38400 linux
 # exec sleep 10
 # sleep 10
 # exec /usr/bin/setsid /bin/sh -c "exec echo ${1} ${i}"
+
+# vim:filetype=sh tabstop=3 shiftwidth=3 expandtab

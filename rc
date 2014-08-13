@@ -23,3 +23,5 @@ do
 done
 
 exit
+
+# vim:filetype=sh tabstop=3 shiftwidth=3 expandtab
