@@ -2,3 +2,4 @@ init
 respawn
 asynx_spawn
 *.o
+init-*

@@ -12,7 +12,7 @@ BIN = $(SRC:.c=)
 all: options bin scripts
 
 options:
-	@echo sinit build options:
+	@echo init build options:
 	@echo "CFLAGS   = $(CFLAGS)"
 	@echo "LDFLAGS  = $(LDFLAGS)"
 	@echo "CC       = $(CC)"
