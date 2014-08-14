@@ -5,6 +5,7 @@
 
 sleep 10
 
+# stop the terminals
 killall --exact "/sbin/respawn" --verbose --signal SIGTERM --process-group
 
 sleep 30
@@ -23,9 +24,6 @@ set -o xtrace
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 /bin/sync && /bin/sync && /bin/sync
-
-# stop the terminals
-# /usr/bin/killall --signal SIGTERM --exact "/sbin/agetty" --verbose
 
 RUNLEVEL=0 /sbin/rc shutdown
 
