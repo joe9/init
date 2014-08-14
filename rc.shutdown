@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# run the below command to run this script
+# sudo asynx_spawn /etc/rc.shutdown
+
+sleep 10
+
 killall --exact "/sbin/respawn" --verbose --signal SIGTERM --process-group
 
 sleep 30
