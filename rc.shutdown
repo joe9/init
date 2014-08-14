@@ -7,6 +7,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 /bin/sync && /bin/sync && /bin/sync
 
+# stop the terminals
+/usr/bin/killall --signal SIGTERM --exact "/sbin/agetty" --verbose
+
 # rc-service xstart stop
 RUNLEVEL=0 /sbin/rc shutdown
 
