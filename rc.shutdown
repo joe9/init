@@ -1,5 +1,17 @@
 #!/bin/sh
 
+killall --exact "/sbin/respawn" --verbose --signal SIGTERM --process-group
+
+sleep 30
+
+killall --exact "/sbin/respawn" --verbose --signal SIGKILL --process-group
+killall --exact "/sbin/agetty" --verbose --signal SIGKILL --process-group
+
+sleep 10
+
+exec 2>/dev/console
+exec 1>/dev/console
+
 set -o verbose
 set -o xtrace
 
@@ -8,12 +20,12 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 /bin/sync && /bin/sync && /bin/sync
 
 # stop the terminals
-/usr/bin/killall --signal SIGTERM --exact "/sbin/agetty" --verbose
+# /usr/bin/killall --signal SIGTERM --exact "/sbin/agetty" --verbose
 
-# rc-service xstart stop
 RUNLEVEL=0 /sbin/rc shutdown
 
 # to check out any messages
 /usr/bin/sleep 5
 
+# TODO: add the shutdown command here
 # vim:filetype=sh tabstop=3 shiftwidth=3 expandtab
