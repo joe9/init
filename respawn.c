@@ -7,7 +7,7 @@
 /* #include <stdio.h> */
 #include <sys/wait.h>
 
-int main (int argc, char *argu[]) {
+int main (int argc, char *argu[], char * const *envp) {
 	pid_t pid;
 	int c;
 	
@@ -26,6 +26,7 @@ int main (int argc, char *argu[]) {
 	    * child of the respawn process as it is easier to kill
 	    * the respawning process if the process misbehaves */ 
 	   /* 		else return (setsid () < 0 || execv (argu[1], argu + 1)); */
-	   else return (execv (argu[1], argu + 1));
+/* 	   else return (execv (argu[1], argu + 1)); */
+	   else return execve (argu[1], argu + 1, envp);
 	}
 }

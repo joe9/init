@@ -3,7 +3,8 @@
 #include <sys/wait.h>
 /* #include <stdio.h> */
 
-int main (int argc, char *argu[]) {
+/* int main (int argc, char *argu[]) { */
+int main (int argc, char * argu[], char * const *envp) {
 	pid_t pid;
 	int c;
 
@@ -25,5 +26,6 @@ int main (int argc, char *argu[]) {
 	if (pid < 0) return 1;
 	if (pid > 0) return 0;
 /* 	printf("after double fork, starting %s\n",argu[1]); */
-	return execvp (argu[1], argu + 1);
+/* 	return execvp (argu[1], argu + 1); */
+	return execve (argu[1], argu + 1, envp);
 }
