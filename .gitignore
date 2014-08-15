@@ -5,3 +5,6 @@ asynx_spawn
 init-*
 hello
 hello.c
+util-linux
+spawn
+signal
