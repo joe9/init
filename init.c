@@ -35,6 +35,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
 /* 	http://www.cs.cityu.edu.hk/~lwang/fork */
 	pid = fork ();
 	if (pid < 0) return EXIT_FAILURE;
+	/* init doesn't want to get signals, hence not unblocking */
 	if (pid > 0) for (;;) wait (&status); /* orphans */
 	
 	/* Unmask signals */
