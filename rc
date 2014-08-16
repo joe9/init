@@ -17,11 +17,22 @@ then
    /sbin/rc default
 fi
 
+# the best guide on process management
+# http://mywiki.wooledge.org/ProcessManagement
+declare -a kids=()
+
+# below happens when this shell script is exiting
+#   gets called on INT, HUP and TERM to the shell script
+trap 'echo "trap function called"; kill "${kids[@]}";' EXIT
+
 for i in {1..5}
 do
-   /sbin/respawn /etc/rc.tty "${i}" &
+   /sbin/respawn -- /etc/rc.tty "${i}" &
+   kids+=($!)
 done
 
-exit
+# By default, wait waits for all of your shell's kids to exit. 
+wait
 
+exit 0
 # vim:filetype=sh tabstop=3 shiftwidth=3 expandtab
