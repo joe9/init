@@ -11,32 +11,53 @@
 #include <unistd.h>
 #include <errno.h>
 
-void signal_handler (int sig);
-
-int spawn (void (*hndlr)(int), int argc, char **argv, char * const *envp);
-
 const char *argp_program_bug_address = "joe9mail@gmail.com";
 const char *argp_program_version = "version 0.0.1";
-
 static int delay = 0;
-static int respawn = 1;
+volatile sig_atomic_t respawn = 1;
 
-static int
-parse_opt (int key, char *arg, struct argp_state *state) {
-   switch (key) {
-      case 'd': {
-	 delay = atoi(arg);
-	 break;
-      }
-      case 'o': {
-	 respawn = 0;
-	 break;
-      }
+void signal_handler (int sig);
+int spawn (int argc, char **argv, char * const *envp);
+static int parse_opt (int key, char *arg, struct argp_state *state);
+
+int main (int argc, char *argv[], char * const *envp) {
+
+   struct argp_option options[] = {
+      { .name	= "delay"
+      , .key	= 'd'
+      , .arg	= "SECONDS"
+      , .flags	= OPTION_ARG_OPTIONAL
+      , .doc	= "Delay period between spawns"
+      },
+      { .name	= "run-once"
+      , .key	= 'o'
+      , .arg	= 0
+      , .flags	= OPTION_ARG_OPTIONAL
+      , .doc	= "Run once. Do not respawn."
+      },
+      {0}
+    };
+   struct argp argp = {
+      .options	= options
+    , .parser	= parse_opt
+    , .args_doc	= "-- command [command arguments]"
+    };
+
+   if (0 != argp_parse (&argp,argc, argv, ARGP_IN_ORDER,0,0)) {
+      perror ("could not parse arguments");
+   };
+
+   printf ("delay: %d, respawn: %d\n", delay,respawn);
+
+   spawn (argc, argv, envp);
+   while (1 == respawn) {
+      sleep(delay);
+      spawn (argc, argv, envp);
    }
-   return 0;
+   return EXIT_SUCCESS;
 }
 
-volatile sig_atomic_t respawn = 1;
+static pid_t child_pid;
 
 void signal_handler (int sig) {
    printf("signal_handler\n");
@@ -45,33 +66,7 @@ void signal_handler (int sig) {
    kill(child_pid,sig);
 }
 
-int main (int argc, char *argv[], char * const *envp) {
-
-   struct argp_option options[] = {
-      {"delay",'d',"SECONDS",OPTION_ARG_OPTIONAL,"Delay period between spawns"},
-      {"run-once",'o',0,OPTION_ARG_OPTIONAL,"Run once. Do not respawn"},
-      {0}
-    };
-
-   struct argp argp = {options, parse_opt, "-- command [command arguments]" };
-
-   if (0 != argp_parse (&argp,argc, argv, ARGP_IN_ORDER,0,0)) {
-      perror ("could not parse arguments");
-   };
-
-   printf ("delay: %d, respawn: %d\n", delay,respawn);
-
-/*    while (1 == respawn) { */
-/*       spawn (drespawn_signal_handler, argc, argv, envp); */
-/*       sleep(secs); */
-/*    } */
-   return EXIT_SUCCESS;
-}
-
-static pid_t child_pid;
-
-int spawn (void (*hndlr)(int), int argc, char **argv, char * const *envp)
-{
+int spawn (int argc, char **argv, char * const *envp) {
     struct sigaction action;
     static sigset_t set;
 
@@ -91,7 +86,7 @@ int spawn (void (*hndlr)(int), int argc, char **argv, char * const *envp)
 
        /* setup the signal handler to progorate signals to
 	* children */
-	action.sa_handler = hndlr;
+	action.sa_handler = signal_handler;
 	sigemptyset (&action.sa_mask);
 	action.sa_flags = 0;
 	sigaction (SIGHUP, &action, NULL);
@@ -114,12 +109,29 @@ int spawn (void (*hndlr)(int), int argc, char **argv, char * const *envp)
 	} /* ignore EINTR */ 
 
     }
-    /* child */
-/*     else if (child_pid == 0) { */
+    /* else if (child_pid == 0) { */ /* child */
     /* Unmask signals */
     sigprocmask(SIG_UNBLOCK, &set, NULL);
 /*  setsid(); */
     return execve (argv[1], argv + 1, envp);
 /*  perror("execve"); */
 /*  _exit(EXIT_FAILURE); */
+}
+
+static int parse_opt (int key, char *arg, struct argp_state *state) {
+/* (void) lines to avoid compiler warnings */
+/* init.c:16:15: warning: unused parameter ‘argc’ [-Wunused-parameter] */
+    (void) state;
+
+   switch (key) {
+      case 'd': {
+	 delay = atoi(arg);
+	 break;
+      }
+      case 'o': {
+	 respawn = 0;
+	 break;
+      }
+   }
+   return 0;
 }
