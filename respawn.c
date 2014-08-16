@@ -7,17 +7,18 @@
 
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 
 const char *argp_program_bug_address = "joe9mail@gmail.com";
 const char *argp_program_version = "version 0.0.1";
-static int delay = 0;
+static int delay = 10; /* default, sleep for 10 seconds between spawns */
 volatile sig_atomic_t respawn = 1;
 
 void signal_handler (int sig);
-int spawn (int argc, char **argv, char * const *envp);
+int spawn (char **argv, char * const *envp);
 static int parse_opt (int key, char *arg, struct argp_state *state);
 
 int main (int argc, char *argv[], char * const *envp) {
@@ -26,7 +27,7 @@ int main (int argc, char *argv[], char * const *envp) {
       { .name	= "delay"
       , .key	= 'd'
       , .arg	= "SECONDS"
-      , .flags	= OPTION_ARG_OPTIONAL
+      , .flags	= 0
       , .doc	= "Delay period between spawns"
       },
       { .name	= "run-once"
@@ -47,12 +48,32 @@ int main (int argc, char *argv[], char * const *envp) {
       perror ("could not parse arguments");
    };
 
-   printf ("delay: %d, respawn: %d\n", delay,respawn);
+   /* commands to test the below 
+      make respawn args; ./respawn --run-once;
+      ./respawn --run-once -- ; ./respawn --run-once -- ./args ;
+      ./respawn --run-once -- ./args "test"
+   */
+   int i = 0;
+   for (i = 0; i < argc; i++) {
+/*       printf("index: %d, pointer: %p, %s\n", */
+/* 	     i,(void *)&(argv[i]),argv[i]); */
+      if (0 == strcmp("--",argv[i])) break;
+   }
+/*    printf("argc: %d, no: %d\n",argc,i); */
+   if (i == argc) {
+     printf("-- command not provided\n");
+     return EXIT_FAILURE;
+   } else if (i + 1 == argc) {
+     printf("command not provided\n");
+     return EXIT_FAILURE;
+   } else i++; /* to skip the -- */
+   
+/*    printf ("delay: %d, respawn: %d\n", delay,respawn); */
 
-   spawn (argc, argv, envp);
+   spawn (&(argv[i]), envp);
    while (1 == respawn) {
       sleep(delay);
-      spawn (argc, argv, envp);
+      spawn (&(argv[i]), envp);
    }
    return EXIT_SUCCESS;
 }
@@ -66,13 +87,9 @@ void signal_handler (int sig) {
    kill(child_pid,sig);
 }
 
-int spawn (int argc, char **argv, char * const *envp) {
+int spawn (char **argv, char * const *envp) {
     struct sigaction action;
     static sigset_t set;
-
-/* (void) lines to avoid compiler warnings */
-/* init.c:16:15: warning: unused parameter ‘argc’ [-Wunused-parameter] */
-    (void) argc;
 
     /* We need to block signals until we have forked */
     sigfillset(&set);
@@ -113,7 +130,13 @@ int spawn (int argc, char **argv, char * const *envp) {
     /* Unmask signals */
     sigprocmask(SIG_UNBLOCK, &set, NULL);
 /*  setsid(); */
-    return execve (argv[1], argv + 1, envp);
+/*     int i = 0; */
+/*     while (0 != argv[i]) { */
+/*        printf("spawn: %d: %s\n",i,argv[i]); */
+/*        i++; */
+/*     } */
+    return execve (argv[0], argv, envp);
+/*     return execve (argv[1], argv + 1, envp); */
 /*  perror("execve"); */
 /*  _exit(EXIT_FAILURE); */
 }
