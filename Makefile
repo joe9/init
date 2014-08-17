@@ -4,7 +4,7 @@ include config.mk
 .SUFFIXES: .c .o
 
 SRC = init.c respawn.c asynx_spawn.c
-SCRIPTS = rc rc.tty rc.shutdown rc.reboot
+SCRIPTS = rc rc.tty rc.X
 
 OBJ = $(SRC:.c=.o)
 BIN = $(SRC:.c=)
