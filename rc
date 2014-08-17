@@ -40,11 +40,11 @@ stoprespawns (){
 }
 shutdown (){
     stoprespawns; RUNLEVEL="0" /sbin/rc shutdown
-    # add the shutdown command here
+    # TODO add the shutdown command here
 }
 reboot (){
     stoprespawns; RUNLEVEL="6" /sbin/rc reboot
-    # add the reboot command here
+    # TODO add the reboot command here
 }
 # below happens when this shell script is exiting
 #   gets called on INT, HUP and TERM to the shell script
