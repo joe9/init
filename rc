@@ -17,21 +17,17 @@ then
    /sbin/rc default
 fi
 
-# the best guide on process management
+# following this for process management
 # http://mywiki.wooledge.org/ProcessManagement
 declare -a kids=()
 
 stoprespawns (){
+    /bin/sync && /bin/sync && /bin/sync
     kill -TERM "${kids[@]}";
     /usr/bin/sleep 10
 
-    exec 2>/dev/console
-    exec 1>/dev/console
-
     set -o verbose
     set -o xtrace
-
-    PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
     /bin/sync && /bin/sync && /bin/sync
 
@@ -57,6 +53,8 @@ do
    /sbin/respawn -- /etc/rc.tty "${i}" &
    kids+=($!)
 done
+test -x /etc/rc.X && /sbin/respawn --delay=60 -- /etc/rc.X &
+kids+=($!)
 
 # By default, wait waits for all of your shell's kids to exit. 
 while [ ${#kids[@]} -gt 0 ]; do 
