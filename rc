@@ -48,7 +48,7 @@ reboot (){
 }
 # below happens when this shell script is exiting
 #   gets called on INT, HUP and TERM to the shell script
-trap 'echo "trap function called"; kill "${kids[@]}";' EXIT
+trap 'echo "trap function called"; if [ ${#kids[@]} -gt 0 ] ; then kill "${kids[@]}"; fi' EXIT
 trap 'echo "USR1 trap function called"; shutdown;' USR1
 trap 'echo "USR2 trap function called"; reboot;' USR2
 
