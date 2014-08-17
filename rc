@@ -21,9 +21,36 @@ fi
 # http://mywiki.wooledge.org/ProcessManagement
 declare -a kids=()
 
+stoprespawns (){
+    kill -TERM "${kids[@]}";
+    /usr/bin/sleep 10
+
+    exec 2>/dev/console
+    exec 1>/dev/console
+
+    set -o verbose
+    set -o xtrace
+
+    PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+    /bin/sync && /bin/sync && /bin/sync
+
+    # to check out any messages
+    /usr/bin/sleep 5
+}
+shutdown (){
+    stoprespawns; RUNLEVEL=0 /sbin/rc shutdown
+    # add the shutdown command here
+}
+reboot (){
+    stoprespawns; RUNLEVEL=6 /sbin/rc reboot
+    # add the reboot command here
+}
 # below happens when this shell script is exiting
 #   gets called on INT, HUP and TERM to the shell script
 trap 'echo "trap function called"; kill "${kids[@]}";' EXIT
+trap 'echo "USR1 trap function called"; shutdown;' USR1
+trap 'echo "USR2 trap function called"; reboot;' USR2
 
 for i in {1..5}
 do
@@ -32,7 +59,16 @@ do
 done
 
 # By default, wait waits for all of your shell's kids to exit. 
-wait
+while [ ${#kids[@]} -gt 0 ]; do 
+   echo "number of kids:" "${#kids[@]}" ", Printing the kids pids:" "${kids[@]}"
+   wait
+   for i in $(seq 0 $((${#kids[@]} - 1)))
+   do
+        if ! kill -0 ${kids[${i}]} 2>/dev/null;
+        then unset kids[${i}]
+        fi
+   done
+done
 
 exit 0
 # vim:filetype=sh tabstop=3 shiftwidth=3 expandtab
