@@ -22,14 +22,14 @@ fi
 declare -a kids=()
 
 stoprespawns (){
-    /bin/sync; /bin/sync; /bin/sync
+    /bin/sync
     kill -TERM "${kids[@]}";
     /usr/bin/sleep 10
 
     set -o verbose
     set -o xtrace
 
-    /bin/sync; /bin/sync; /bin/sync
+    /bin/sync
 
     # to check out any messages
     /usr/bin/sleep 5
