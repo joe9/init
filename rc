@@ -6,8 +6,8 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
-RUNLEVEL=S /sbin/rc sysinit
-RUNLEVEL=S /sbin/rc boot
+RUNLEVEL="S" /sbin/rc sysinit
+RUNLEVEL="S" /sbin/rc boot
 
 # Do not start services besides tty's if we're running single-user.
 if [[ ! -n "$(grep single /proc/cmdline)" ]]
@@ -35,11 +35,11 @@ stoprespawns (){
     /usr/bin/sleep 5
 }
 shutdown (){
-    stoprespawns; RUNLEVEL=0 /sbin/rc shutdown
+    stoprespawns; RUNLEVEL="0" /sbin/rc shutdown
     # add the shutdown command here
 }
 reboot (){
-    stoprespawns; RUNLEVEL=6 /sbin/rc reboot
+    stoprespawns; RUNLEVEL="6" /sbin/rc reboot
     # add the reboot command here
 }
 # below happens when this shell script is exiting
