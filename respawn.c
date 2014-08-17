@@ -135,10 +135,10 @@ int spawn (char **argv, char * const *envp) {
 /*        printf("spawn: %d: %s\n",i,argv[i]); */
 /*        i++; */
 /*     } */
-    return execve (argv[0], argv, envp);
-/*     return execve (argv[1], argv + 1, envp); */
-/*  perror("execve"); */
-/*  _exit(EXIT_FAILURE); */
+    execve (argv[0], argv, envp);
+    perror("respawn: error on execve");
+    perror(argv[0]);
+    _exit(EXIT_FAILURE);
 }
 
 static int parse_opt (int key, char *arg, struct argp_state *state) {

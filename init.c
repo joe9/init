@@ -16,7 +16,6 @@ void signal_handler (int sig) {
    if (0 < child_pid) kill(child_pid,sig);
 }
 
-/* int main () { */
 /* using envp as linux kernel sets TERM environment variable which is
  * used by the rc init scripts to figure out if it is a colour
  * terminal. got the below line from runit-init.c */
@@ -69,7 +68,10 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	setsid ();
 	setpgid (0, 0);
 /* 	return execve ("/etc/rc", (char * []){ "rc", 0 }, (char * []){ 0 }); */
-	return execve ("/etc/rc", (char * []){ "rc", 0 }, envp);
-/* 	return execve ("/home/j/dev/scripts/init/test1.sh" */
-/* 	              , (char * []){ "test1.sh", 0 }, envp); */
+/* 	return execve ("/etc/rc", (char * []){ "rc", 0 }, envp); */
+	execve ("/etc/rc", (char * []){ "rc", 0 }, envp);
+	perror("init: execve /etc/rc");
+	execve ("/bin/sh", (char * []){ "sh", 0 }, envp);
+	perror("init: execve /bin/sh");
+        _exit(EXIT_FAILURE);
 }
