@@ -23,6 +23,10 @@ declare -a kids=()
 
 stoprespawns (){
     /bin/sync
+    # the builtin kill is far better idea --
+    # it doesn't fork, it uses the exact same syscall, and
+    # it still works even if you hit your local process limit
+    # (meaning you wouldn't be able to fork/exec /bin/kill)
     kill -TERM "${kids[@]}";
     /usr/bin/sleep 10
 
