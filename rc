@@ -21,6 +21,9 @@ fi
 # http://mywiki.wooledge.org/ProcessManagement
 declare -a kids=()
 
+treeps(){
+    ps --ppid 2 --pid 2 --deselect --headers --forest --format caught,pending,ignored,session,pgid,ppid,pid,stat,user,tty,command
+}
 stoprespawns (){
     /bin/sync
     # the builtin kill is far better idea --
@@ -34,15 +37,15 @@ stoprespawns (){
     /bin/sync
 
     # to check out any messages
-    /usr/bin/pstree
+    treeps
     /usr/bin/sleep 5
 }
 shutdown (){
-    stoprespawns; RUNLEVEL="0" /sbin/rc shutdown; /usr/bin/pstree
+    stoprespawns; RUNLEVEL="0" /sbin/rc shutdown; treeps
     # TODO add the shutdown command here
 }
 reboot (){
-    stoprespawns; RUNLEVEL="6" /sbin/rc reboot; /usr/bin/pstree
+    stoprespawns; RUNLEVEL="6" /sbin/rc reboot; treeps
     # TODO add the reboot command here
 }
 # below happens when this shell script is exiting
