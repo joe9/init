@@ -10,7 +10,7 @@ RUNLEVEL=S /sbin/rc sysinit
 RUNLEVEL=S /sbin/rc boot
 
 # Do not start services besides tty's if we're running single-user.
-if [ ! -n "$(grep single /proc/cmdline)" ]
+if [[ ! -n "$(grep single /proc/cmdline)" ]]
 then
    # taken the below from /etc/rc.multi
    # /sbin/asynx_spawn /etc/rc.X
@@ -57,7 +57,7 @@ test -x /etc/rc.X && /sbin/respawn --delay=60 -- /etc/rc.X &
 kids+=($!)
 
 # By default, wait waits for all of your shell's kids to exit. 
-while [ ${#kids[@]} -gt 0 ]; do 
+while [[ ${#kids[@]} -gt 0 ]]; do 
    echo "number of kids:" "${#kids[@]}" ", Printing the kids pids:" "${kids[@]}"
    wait
    for i in $(seq 0 $((${#kids[@]} - 1)))
