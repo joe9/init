@@ -8,7 +8,6 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
 #include <sys/wait.h>
 
@@ -58,7 +57,6 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	     sigprocmask (SIG_UNBLOCK, &set, 0);
 	   for (;;) {
 	      if (-1 == wait (0) && ECHILD == errno) { /* orphans */
-		 printf("no children\n");
 		 child_pid = 0;
 		 sleep (1);
 	      }
@@ -71,7 +69,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	setsid ();
 	setpgid (0, 0);
 /* 	return execve ("/etc/rc", (char * []){ "rc", 0 }, (char * []){ 0 }); */
-/* 	return execve ("/etc/rc", (char * []){ "rc", 0 }, envp); */
-	return execve ("/home/j/dev/scripts/init/test1.sh"
-	              , (char * []){ "test1.sh", 0 }, envp);
+	return execve ("/etc/rc", (char * []){ "rc", 0 }, envp);
+/* 	return execve ("/home/j/dev/scripts/init/test1.sh" */
+/* 	              , (char * []){ "test1.sh", 0 }, envp); */
 }
