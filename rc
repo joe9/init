@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # system one time tasks
 
 # /bin/bash -- if you want to debug, or, could just as well use
