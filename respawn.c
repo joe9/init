@@ -90,6 +90,7 @@ void signal_handler (int sig) {
 int spawn (char **argv, char * const *envp) {
     struct sigaction action;
     static sigset_t set;
+    int savederrno;
 
     /* We need to block signals until we have forked */
     sigfillset(&set);
@@ -136,9 +137,10 @@ int spawn (char **argv, char * const *envp) {
 /*        i++; */
 /*     } */
     execve (argv[0], argv, envp);
+    savederrno = errno;
     perror("respawn: error on execve");
     perror(argv[0]);
-    _exit(EXIT_FAILURE);
+    _exit(savederrno);
 }
 
 static int parse_opt (int key, char *arg, struct argp_state *state) {

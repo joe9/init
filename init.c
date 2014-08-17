@@ -24,6 +24,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
 
     struct sigaction action;
     sigset_t set;
+    int savederrno;
 	
 /* 	(void) lines to avoid compiler warnings */
 /* init.c:16:15: warning: unused parameter ‘argc’ [-Wunused-parameter] */
@@ -73,6 +74,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	execve ("/etc/rc", (char * []){ "rc", 0 }, envp);
 	perror("init: execve /etc/rc");
 	execve ("/bin/sh", (char * []){ "sh", 0 }, envp);
+	savederrno = errno;
 	perror("init: execve /bin/sh");
-        _exit(EXIT_FAILURE);
+        _exit(errno);
 }
