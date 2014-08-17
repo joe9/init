@@ -28,22 +28,21 @@ stoprespawns (){
     # it still works even if you hit your local process limit
     # (meaning you wouldn't be able to fork/exec /bin/kill)
     kill -TERM "${kids[@]}";
-    /usr/bin/sleep 10
 
     set -o verbose
     set -o xtrace
-
     /bin/sync
 
     # to check out any messages
+    /usr/bin/pstree
     /usr/bin/sleep 5
 }
 shutdown (){
-    stoprespawns; RUNLEVEL="0" /sbin/rc shutdown
+    stoprespawns; RUNLEVEL="0" /sbin/rc shutdown; /usr/bin/pstree
     # TODO add the shutdown command here
 }
 reboot (){
-    stoprespawns; RUNLEVEL="6" /sbin/rc reboot
+    stoprespawns; RUNLEVEL="6" /sbin/rc reboot; /usr/bin/pstree
     # TODO add the reboot command here
 }
 # below happens when this shell script is exiting
@@ -57,8 +56,11 @@ do
    /sbin/respawn -- /etc/rc.tty "${i}" &
    kids+=($!)
 done
-test -x /etc/rc.X && /sbin/respawn --delay=60 -- /etc/rc.X &
-kids+=($!)
+if [[ -x "/etc/rc.X" ]];
+then
+   /sbin/respawn --delay=60 -- /etc/rc.X &
+   kids+=($!)
+fi
 
 # By default, wait waits for all of your shell's kids to exit. 
 while [[ ${#kids[@]} -gt 0 ]]; do 
