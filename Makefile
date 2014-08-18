@@ -4,7 +4,7 @@ include config.mk
 .SUFFIXES: .c .o
 
 SRC = init.c respawn.c asynx_spawn.c
-SCRIPTS = rc rc.tty rc.X
+SCRIPTS = rc rc.tty
 
 OBJ = $(SRC:.c=.o)
 BIN = $(SRC:.c=)
@@ -34,12 +34,18 @@ $(OBJ): config.mk
 dist: clean
 	@echo creating dist tarball
 	@mkdir -p init-$(VERSION)
-	@cp LICENSE Makefile README config.mk init.8 init.c \
-	 	respawn.c asynx_spawn.c rc rc.tty \
+	@cp Makefile README config.mk init.8 init.c \
+	 	respawn.c asynx_spawn.c rc rc.tty rc.X \
 		init-$(VERSION)
 	@tar -cf init-$(VERSION).tar init-$(VERSION)
 	@gzip init-$(VERSION).tar
 	@rm -rf init-$(VERSION)
+
+installrc.X:
+	@echo installing rc.X to $(DESTDIR)$(ETCDIR)
+	@mkdir -p $(DESTDIR)$(ETCDIR)
+	@cp -f rc.X $(DESTDIR)$(ETCDIR)
+	@chmod 755 $(DESTDIR)$(ETCDIR)/rc.X
 
 install: all
 	@echo installing executable to $(DESTDIR)$(SBINDIR)
