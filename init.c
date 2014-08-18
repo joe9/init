@@ -12,9 +12,9 @@
 #include <errno.h>
 #include <sys/wait.h>
 
-static pid_t child_pid;
+static pid_t rc_pid;
 void signal_handler (int sig) {
-   if (0 < child_pid) kill(child_pid,sig);
+   if (0 < rc_pid) kill(rc_pid,sig);
 }
 
 /* using envp as linux kernel sets TERM environment variable which is
@@ -25,6 +25,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
     struct sigaction action;
     sigset_t set;
     int savederrno;
+    pid_t wait_pid;
 	
 /* 	(void) lines to avoid compiler warnings */
 /* init.c:16:15: warning: unused parameter ‘argc’ [-Wunused-parameter] */
@@ -39,11 +40,11 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	sigprocmask (SIG_BLOCK, &set, 0);
 	
 /* 	http://www.cs.cityu.edu.hk/~lwang/fork */
-	child_pid = fork ();
-	if (child_pid < 0) return EXIT_FAILURE;
+	rc_pid = fork ();
+	if (rc_pid < 0) return EXIT_FAILURE;
 	/* init doesn't want to get signals, hence not unblocking */
-/* 	if (child_pid > 0) for (;;) wait (&status); /\* orphans *\/ */
-	if (child_pid > 0) {
+/* 	if (rc_pid > 0) for (;;) wait (&status); /\* orphans *\/ */
+	if (rc_pid > 0) {
 	    /* setup the signal handler to progorate signals to
 	     * children */
 	     action.sa_handler = signal_handler;
@@ -56,12 +57,18 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	     sigaddset (&set, SIGUSR1);
 	     sigaddset (&set, SIGUSR2);
 	     sigprocmask (SIG_UNBLOCK, &set, 0);
-	   for (;;) {
-	      if (-1 == wait (0) && ECHILD == errno) { /* orphans */
-		 child_pid = 0;
-		 sleep (1);
-	      }
-	   }
+	     while ((wait_pid = wait(0))) { /* orphans */
+		/* when there are no children, do not waste cpu cycles */
+		if (-1 == wait_pid && ECHILD == errno) sleep(1);
+		/* if the /etc/rc process ends, do not bother signalling it */
+		else if (rc_pid == wait_pid) {
+		    /* do not bother with signalling as rc
+		     * child does not exist anymore */
+		    rc_pid = 0;
+		    sigfillset (&set);
+		    sigprocmask (SIG_BLOCK, &set, 0);
+		}
+	     }
 	}
 	
 	/* Unmask signals */
@@ -76,5 +83,5 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	execve ("/bin/sh", (char * []){ "sh", 0 }, envp);
 	savederrno = errno;
 	perror("init: execve /bin/sh");
-        _exit(errno);
+        _exit(savederrno);
 }

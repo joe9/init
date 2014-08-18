@@ -91,6 +91,7 @@ int spawn (char **argv, char * const *envp) {
     struct sigaction action;
     static sigset_t set;
     int savederrno;
+    pid_t wait_pid;
 
     /* We need to block signals until we have forked */
     sigfillset(&set);
@@ -116,16 +117,13 @@ int spawn (char **argv, char * const *envp) {
 
 	/* wait as long as any child is there */
 	/* reap children */
-	while (-1 != wait(NULL) || errno == EINTR) ;
+	/* ignore other pids, EINTR and EINVAL also */
+	while ((wait_pid = wait(0))) if (-1 == wait_pid && ECHILD == errno) break;
 
 	if (ECHILD == errno) {
 	   printf("All children exited\n");
 	   return EXIT_SUCCESS;
-	} else if (EINVAL == errno) {
-	    perror("wait");
-	    return EXIT_FAILURE;
-	} /* ignore EINTR */ 
-
+	}
     }
     /* else if (child_pid == 0) { */ /* child */
     /* Unmask signals */
