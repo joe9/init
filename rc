@@ -39,14 +39,23 @@ stoprespawns (){
     # to check out any messages
     treeps
     /usr/bin/sleep 5
+    treeps
+    /usr/bin/sleep 5
+    treeps
+    /usr/bin/sleep 5
+    treeps
+    /usr/bin/sleep 5
+    treeps
+    /usr/bin/sleep 5
+    treeps
+    /usr/bin/sleep 5
+    treeps
 }
 shutdown (){
-    stoprespawns; RUNLEVEL="0" /sbin/rc shutdown; treeps
-    # TODO add the shutdown command here
+    stoprespawns; RUNLEVEL="0" /sbin/rc shutdown; treeps; /sbin/poweroff -f
 }
 reboot (){
-    stoprespawns; RUNLEVEL="6" /sbin/rc reboot; treeps
-    # TODO add the reboot command here
+    stoprespawns; RUNLEVEL="6" /sbin/rc reboot; treeps; /sbin/reboot -f
 }
 # below happens when this shell script is exiting
 #   gets called on INT, HUP and TERM to the shell script
