@@ -1,10 +1,11 @@
 #!/bin/bash
 # system one time tasks
 
-# /bin/bash -- if you want to debug, or, could just as well use
+# /bin/bash # if you want to debug, or, could just as well use
 #    init=/bin/bash in kernel command line or in initramfs init
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
+TERM=linux # for colored openrc output
 
 RUNLEVEL="S" /sbin/rc sysinit
 RUNLEVEL="S" /sbin/rc boot
@@ -20,43 +21,23 @@ fi
 # following this for process management
 # http://mywiki.wooledge.org/ProcessManagement
 declare -a kids=()
+let timed_wait=0
 
 treeps(){
-    ps --ppid 2 --pid 2 --deselect --headers --forest --format caught,pending,ignored,session,pgid,ppid,pid,stat,user,tty,command
+    ps --ppid 2 --pid 2 --deselect --headers --forest \
+--format caught,pending,ignored,session,pgid,ppid,pid,stat,user,tty,command
 }
-stoprespawns (){
-    /bin/sync
-    # the builtin kill is far better idea --
-    # it doesn't fork, it uses the exact same syscall, and
-    # it still works even if you hit your local process limit
-    # (meaning you wouldn't be able to fork/exec /bin/kill)
-    kill -TERM "${kids[@]}";
-
-    set -o verbose
-    set -o xtrace
-    /bin/sync
-
-    # to check out any messages
-    treeps
-    /usr/bin/sleep 5
-    treeps
-    /usr/bin/sleep 5
-    treeps
-    /usr/bin/sleep 5
-    treeps
-    /usr/bin/sleep 5
-    treeps
-    /usr/bin/sleep 5
-    treeps
-    /usr/bin/sleep 5
-    treeps
+shutdown() {
+   /bin/sync
+   let timed_wait=1
+   # the builtin kill is far better idea --
+   # it doesn't fork, it uses the exact same syscall, and
+   # it still works even if you hit your local process limit
+   # (meaning you wouldn't be able to fork/exec /bin/kill)
+   kill -TERM "${kids[@]}";
+   let reboot=0;
 }
-shutdown (){
-    stoprespawns; RUNLEVEL="0" /sbin/rc shutdown; treeps; /sbin/poweroff -f
-}
-reboot (){
-    stoprespawns; RUNLEVEL="6" /sbin/rc reboot; treeps; /sbin/reboot -f
-}
+reboot() { shutdown; let reboot=1; }
 # below happens when this shell script is exiting
 #   gets called on INT, HUP and TERM to the shell script
 trap 'echo "trap function called"; if [ ${#kids[@]} -gt 0 ] ; then kill "${kids[@]}"; fi' EXIT
@@ -73,10 +54,27 @@ then
    /sbin/respawn --delay=60 -- /etc/rc.X &
    kids+=($!)
 fi
-
-# By default, wait waits for all of your shell's kids to exit. 
-while [[ ${#kids[@]} -gt 0 ]]; do 
-   echo "number of kids:" "${#kids[@]}" ", Printing the kids pids:" "${kids[@]}"
+watchit() {
+    # trap "cleanup" ALRM
+    /usr/bin/sleep 5& wait $!
+    kill -ALRM $$ # wake the parent process
+}
+start_timer(){
+    # below from
+# http://stackoverflow.com/questions/687948/timeout-a-command-in-bash-without-unnecessary-delay
+# http://www.pixelbeat.org/scripts/timeout
+   # sends 3 more TERMS and a KILL
+   if   [[ $timed_wait -gt 5  ]]; then kill -TERM "${kids[@]}";
+   elif [[ $timed_wait -gt 20 ]]; then kill -KILL "${kids[@]}"; fi
+   let timed_wait=timed_wait+5
+   trap "trap - ALRM" ALRM INT  #reset handler to default after timeout
+   watchit&  watchit_pid=$! # start the timeout
+}
+# By default, wait waits for all of your shell's kids to exit.
+while [[ ${#kids[@]} -gt 0 ]]; do
+   echo "number of kids:" "${#kids[@]}" \
+        ", Printing the kids pids:" "${kids[@]}"
+   if [[ $timed_wait -gt 0 ]]; then start_timer; fi
    wait
    for i in $(seq 0 $((${#kids[@]} - 1)))
    do
@@ -86,5 +84,12 @@ while [[ ${#kids[@]} -gt 0 ]]; do
    done
 done
 
-exit 0
+# below to ensure that we did not leave any other child processes
+#   unreaped
+wait
+
+if [[ reboot -gt 0 ]];
+then RUNLEVEL="6" /sbin/rc reboot;   exec /sbin/reboot -f
+else RUNLEVEL="0" /sbin/rc shutdown; exec /sbin/poweroff -f
+fi
 # vim:filetype=sh tabstop=3 shiftwidth=3 expandtab
