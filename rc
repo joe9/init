@@ -44,16 +44,16 @@ trap 'echo "trap function called"; if [ ${#kids[@]} -gt 0 ] ; then kill "${kids[
 trap 'echo "USR1 trap function called"; shutdown;' USR1
 trap 'echo "USR2 trap function called"; reboot;' USR2
 
-for i in {1..5}
-do
-   /sbin/respawn -- /etc/rc.tty "${i}" &
-   kids+=($!)
-done
 if [[ -x "/etc/rc.X" ]];
 then
    /sbin/respawn --delay=60 -- /etc/rc.X &
    kids+=($!)
 fi
+for i in {1..5}
+do
+   /sbin/respawn -- /etc/rc.tty "${i}" &
+   kids+=($!)
+done
 watchit() {
     # trap "cleanup" ALRM
     /usr/bin/sleep 5& wait $!
