@@ -20,31 +20,16 @@ fi
 
 # following this for process management
 # http://mywiki.wooledge.org/ProcessManagement
-declare -a kids=()
-let timed_wait=0
-
-treeps(){
-    ps --ppid 2 --pid 2 --deselect --headers --forest \
---format caught,pending,ignored,session,pgid,ppid,pid,stat,user,tty,command
-}
-shutdown() {
-   /bin/sync
-   let timed_wait=1
-   # the builtin kill is far better idea --
-   # it doesn't fork, it uses the exact same syscall, and
-   # it still works even if you hit your local process limit
-   # (meaning you wouldn't be able to fork/exec /bin/kill)
-   kill -TERM "${kids[@]}";
-   let reboot=0;
-}
-reboot() { shutdown; let reboot=1; }
+kids=() timed_wait=0 reboot=0
+shutdown() { /bin/sync; timed_wait=1 reboot=0 }
+reboot()   { shutdown; reboot=1; }
 # below happens when this shell script is exiting
 #   gets called on INT, HUP and TERM to the shell script
 trap 'echo "trap function called"; if [ ${#kids[@]} -gt 0 ] ; then kill "${kids[@]}"; fi' EXIT
 trap 'echo "USR1 trap function called"; shutdown;' USR1
 trap 'echo "USR2 trap function called"; reboot;' USR2
 
-if [[ -x "/etc/rc.X" ]];
+if [ -x "/etc/rc.X" ];
 then
    /sbin/respawn --delay=60 -- /etc/rc.X &
    kids+=($!)
@@ -54,6 +39,7 @@ do
    /sbin/respawn -- /etc/rc.tty "${i}" &
    kids+=($!)
 done
+
 watchit() {
     # trap "cleanup" ALRM
     /usr/bin/sleep 5& wait $!
@@ -63,18 +49,22 @@ start_timer(){
     # below from
 # http://stackoverflow.com/questions/687948/timeout-a-command-in-bash-without-unnecessary-delay
 # http://www.pixelbeat.org/scripts/timeout
-   # sends 3 more TERMS and a KILL
-   if   [[ $timed_wait -gt 5  ]]; then kill -TERM "${kids[@]}";
-   elif [[ $timed_wait -gt 20 ]]; then kill -KILL "${kids[@]}"; fi
-   let timed_wait=timed_wait+5
+   # the builtin kill is far better idea --
+   # it doesn't fork, it uses the exact same syscall, and
+   # it still works even if you hit your local process limit
+   # (meaning you wouldn't be able to fork/exec /bin/kill)
+   # sends 2 TERMS and a KILL
+   if   [ $timed_wait -gt 10 ]; then kill -KILL "${kids[@]}";
+   else                              kill -TERM "${kids[@]}"; fi
+   : $(( timed_wait+=5 ))
    trap "trap - ALRM" ALRM INT  #reset handler to default after timeout
    watchit&  watchit_pid=$! # start the timeout
 }
 # By default, wait waits for all of your shell's kids to exit.
-while [[ ${#kids[@]} -gt 0 ]]; do
+while [ ${#kids[@]} -gt 0 ]; do
    echo "number of kids:" "${#kids[@]}" \
         ", Printing the kids pids:" "${kids[@]}"
-   if [[ $timed_wait -gt 0 ]]; then start_timer; fi
+   if [ $timed_wait -gt 0 ]; then start_timer; fi
    wait
    for i in $(seq 0 $((${#kids[@]} - 1)))
    do
@@ -88,7 +78,7 @@ done
 #   unreaped
 wait
 
-if [[ reboot -gt 0 ]];
+if [ reboot -gt 0 ];
 then RUNLEVEL="6" /sbin/rc reboot;   exec /sbin/reboot -f
 else RUNLEVEL="0" /sbin/rc shutdown; exec /sbin/poweroff -f
 fi
