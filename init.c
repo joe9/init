@@ -33,7 +33,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
 	(void) argc;
 	(void) argv;
 	
-/* 	if (getpid () != 1) return EXIT_FAILURE; */
+	if (getpid () != 1) return EXIT_FAILURE;
 	
 	/* We need to block signals until we have forked */
 	sigfillset (&set);
