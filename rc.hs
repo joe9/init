@@ -21,8 +21,7 @@ import           System.Exit
 -- import           System.Info
 -- import           System.IO
 -- import           System.Posix.IO
-import           System.Posix.Process (executeFile, forkProcess,
-                                       getAnyProcessStatus)
+import           System.Posix.Process (executeFile, forkProcess, interruptibleGetAnyProcessStatus)
 import           System.Posix.Process (ProcessStatus)
 import           System.Posix.Signals
 import           System.Posix.Types   (ProcessID)
@@ -79,7 +78,7 @@ waitLoopFlagTest mf f@(Flags {fTerm = True}) ps = do
  waitLoop mf ps
 waitLoopFlagTest mf _ ps = do
  putStrLn "waitLoopFlagTest: looping again"
- getAnyProcessStatus True False >>= waitLoop mf . removePid ps
+ interruptibleGetAnyProcessStatus True False >>= waitLoop mf . removePid ps
 
 exit :: Flags -> IO ()
 exit (Flags {fShutdown = True}) =
