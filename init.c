@@ -25,7 +25,8 @@ static struct {
 	{ SIGCHLD, sigreap      },
 	{ SIGHUP,  sigrestart   }
 };
-static char *const rcinitcmd[] = { "/home/j/dev/scripts/init/hello", NULL };
+/* static char *const rcinitcmd[] = { "/home/j/dev/scripts/init/hello", NULL }; */
+static char *const rcinitcmd[] = { "/etc/rc", NULL };
 
 void sigpropogate (pid_t rc_pid,int sig) {
    if (0 < rc_pid) kill(rc_pid,sig);
@@ -47,8 +48,8 @@ void sigrestart (pid_t rc_pid,int sig) {
    char pid_str[15];
    if (0 < rc_pid)   kill(rc_pid,sig);
    sprintf(pid_str, "%d", rc_pid);
-   execv ("/home/j/dev/scripts/init/init"
-/*    execve ( "/sbin/init" */
+/*    execv ("/home/j/dev/scripts/init/init" */
+   execv ( "/sbin/init"
 	   , (char * []){ "init",pid_str,0 });
 }
 pid_t spawn(char *const argv[], char * const *envp) {
@@ -81,8 +82,8 @@ int main (int argc, const char * const *argv, char * const *envp) {
     size_t i = 0;
     pid_t rc_pid = 0;
 	
-/*     if (getpid () != 1) return EXIT_FAILURE; */
-/*     chdir("/"); */
+    if (getpid () != 1) return EXIT_FAILURE;
+    chdir("/");
 
     /* block all signals */
     sigfillset (&set);
