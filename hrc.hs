@@ -21,33 +21,31 @@ import           System.Exit
 -- import           System.Info
 -- import           System.IO
 -- import           System.Posix.IO
-import           System.Posix.Process (executeFile, forkProcess, interruptibleGetAnyProcessStatus)
+import           System.Posix.Process (executeFile, forkProcess,
+                                       getAnyProcessStatus)
 import           System.Posix.Process (ProcessStatus)
 import           System.Posix.Signals
 import           System.Posix.Types   (ProcessID)
 -- import           System.Posix.Unistd
--- import           System.Process
+import           System.Process
 import           Text.Groom
 
 -- fork and wait for the child
 
-data Flags = Flags {
-      fRestart    :: Bool
-      , fShutdown :: Bool
-      , fReboot   :: Bool
-      , fTerm     :: Bool
-}
+data State = State { sReboot :: Bool
+                   , sPids   :: [ProcessID]
+                   } deriving (Show)
 
-instance Default Flags where def = Flags False False False False
+instance Default State where def = State False []
 
 main :: IO ()
 main = do
- flags <- newMVar def
  args <- getArgs
  pids <- runOnce args
- installSignalHandlers flags pids
- putStrLn . groom $ pids
- waitLoop flags pids
+ m <- newMVar (State False pids)
+ installSignalHandlers m
+ putStrLn . show $ pids
+ waitLoop m
 
 runOnce :: [String] -> IO [ProcessID]
 runOnce [] =
@@ -63,82 +61,106 @@ toProcessID :: String -> Maybe ProcessID
 toProcessID ("0") = Nothing
 toProcessID x = readMay x
 
-waitLoop :: MVar Flags -> [ProcessID] -> IO ()
-waitLoop mf ps = do
-  f <- readMVar mf
-  waitLoopFlagTest mf f ps
+waitLoop :: MVar State -> IO ()
+waitLoop m = do
+ s <- readMVar m
+ waitPidsLoop (sPids s)
+ waitLoop m
 
-waitLoopFlagTest :: MVar Flags -> Flags -> [ProcessID] -> IO ()
-waitLoopFlagTest _ f [] = exit f
-waitLoopFlagTest _ (Flags {fRestart = True}) ps = restart ps
-waitLoopFlagTest mf f@(Flags {fTerm = True}) ps = do
- putStrLn "waitLoopFlagTest: checking Term "
- sendTerm ps
- putMVar mf (f {fTerm = False})
- waitLoop mf ps
-waitLoopFlagTest mf _ ps = do
- putStrLn "waitLoopFlagTest: looping again"
- interruptibleGetAnyProcessStatus True False >>= waitLoop mf . removePid ps
+waitPidsLoop :: [ProcessID] -> IO () -- [ProcessID]
+waitPidsLoop [] = exitSuccess
+waitPidsLoop ps = do
+ -- https://ghc.haskell.org/trac/ghc/ticket/4504
+ blockSignals reservedSignals
+ awaitSignal Nothing >> yield
+ threadDelay (1 * 1000000)
+ yield
 
-exit :: Flags -> IO ()
-exit (Flags {fShutdown = True}) =
+alarm :: MVar State -> IO ()
+alarm m = do
+ s <- readMVar m
+ sendKill . sPids $ s
+ quit . sReboot $ s
+
+quit :: Bool -> IO ()
+quit False =
  putStrLn "calling shutdown"
---  callCommand "RUNLEVEL=0 /sbin/rc shutdown"
---   >> executeFile "/sbin/poweroff" False ["-f"] Nothing
-exit (Flags {fReboot = True}) =
+  >> callCommand "RUNLEVEL=0 /sbin/rc shutdown"
+  >> executeFile "/sbin/poweroff" False ["-f"] Nothing
+quit True =
  putStrLn "calling reboot"
---  callCommand "RUNLEVEL=6 /sbin/rc reboot"
---   >> executeFile "/sbin/reboot" False ["-f"] Nothing
-exit _ = exitSuccess
+  >> callCommand "RUNLEVEL=6 /sbin/rc reboot"
+  >> executeFile "/sbin/reboot" False ["-f"] Nothing
 
-sendTerm :: [ProcessID] -> IO ()
-sendTerm ps = mapM_ (signalProcess sigTERM) ps >> putStrLn "after sendTERM"
+installAlarmSignalHandler :: MVar State -> IO ()
+installAlarmSignalHandler s =
+ installHandler sigALRM (Catch $ alarm s)  Nothing
+ >> return ()
 
+installSignalHandlers :: MVar State -> IO ()
+installSignalHandlers s =
+ installHandler sigHUP  (Catch $ hup s)  Nothing
+ >> installHandler sigUSR1 (Catch $ shutdown s) Nothing
+ >> installHandler sigUSR2 (Catch $ reboot s)   Nothing
+ >> installHandler sigTERM (Catch $ term s)   Nothing
+ >> installHandler sigCHLD (Catch $ reap s)   Nothing
+ >> return ()
+
+reap :: MVar State -> IO ()
+reap m = do
+ putStrLn "received CHLD"
+ s <- takeMVar m
+ p <- getAnyProcessStatus True True
+ putStrLn $ "getAnyProcessStatus returned: " ++ (groom p)
+ let state = s{sPids = removePid (sPids s) p}
+ putMVar m state
+ putStrLn . groom $ state
 
 removePid :: [ProcessID] -> Maybe (ProcessID, ProcessStatus) -> [ProcessID]
 removePid [] _ = []
 removePid ps Nothing = ps
-removePid ps (Just (pid,_)) = filter ((==) pid) ps
-
-installSignalHandlers :: MVar Flags -> [ProcessID] -> IO ()
-installSignalHandlers f ps =
- installHandler sigHUP  (Catch $ setRestart f)  Nothing
- >> installHandler sigUSR1 (Catch $ setShutdown f) Nothing
- >> installHandler sigUSR2 (Catch $ setReboot f)   Nothing
- >> installHandler sigTERM (Catch $ setTerm f ps)   Nothing
- >> return ()
+removePid ps (Just (pid,_)) = filter (not . (==) pid) ps
 
 restart :: [ProcessID] -> IO ()
 restart ps =
- (putStrLn . groom $ ps)
+ (putStrLn . show $ ps)
   >> getEnvironment
-  >>= executeFile "/home/j/dev/scripts/init/rc" False (map show ps)
+  >>= executeFile "/home/j/dev/scripts/init/testrc" False (map show ps)
           . Just
 
-setRestart :: MVar Flags -> IO ()
-setRestart mf = do
-  fs <- takeMVar mf
-  putMVar mf (fs {fRestart = True})
-  putStrLn "received HUP"
+hup :: MVar State -> IO ()
+hup f = putStrLn "received HUP" >> takeMVar f >>= restart . sPids
 
-setShutdown :: MVar Flags -> IO ()
-setShutdown mf = do
-  fs <- takeMVar mf
-  putMVar mf (fs {fShutdown = True})
-  putStrLn "received USR1"
+shutdown :: MVar State -> IO ()
+shutdown s =
+ putStrLn "received USR1"
+ >> installAlarmSignalHandler s
+ >> takeMVar s
+ >>= sendTerm . sPids
+ >> scheduleAlarm 1
+ >> return ()
 
-setReboot :: MVar Flags -> IO ()
-setReboot mf = do
-  fs <- takeMVar mf
-  putMVar mf (fs {fReboot = True})
+reboot :: MVar State -> IO ()
+reboot f = do
   putStrLn "received USR2"
+  installAlarmSignalHandler f
+  s <- takeMVar f
+  putMVar f (s {sReboot = True})
+  sendTerm . sPids $ s
+  _ <- scheduleAlarm 1
+  return ()
 
-setTerm :: MVar Flags -> [ProcessID] -> IO ()
-setTerm f ps = do
---   fs <- takeMVar f
---   putMVar f (fs {fTerm = True})
-  putStrLn "received TERM"
-  sendTerm ps
+term :: MVar State -> IO ()
+term f = putStrLn "received TERM" >> takeMVar f >>= sendTerm . sPids
+
+sendTerm :: [ProcessID] -> IO ()
+sendTerm = sendSignal softwareTermination
+
+sendKill :: [ProcessID] -> IO ()
+sendKill = sendSignal killProcess
+
+sendSignal :: Signal -> [ProcessID] -> IO ()
+sendSignal sig ps = mapM_ (signalProcess sig) ps
 
 uninstallSignalHandlers :: IO ()
 uninstallSignalHandlers =
