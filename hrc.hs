@@ -67,6 +67,7 @@ waitLoop m = do
  waitPidsLoop (sPids s)
  waitLoop m
 
+-- TODO read this: https://ghc.haskell.org/trac/ghc/wiki/Commentary/Rts/Signals
 waitPidsLoop :: [ProcessID] -> IO () -- [ProcessID]
 waitPidsLoop [] = exitSuccess
 waitPidsLoop ps = do
