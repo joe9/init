@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # system one time tasks
 
 # /bin/bash # if you want to debug, or, could just as well use
@@ -20,5 +20,6 @@ fi
 
 # following this for process management
 # http://mywiki.wooledge.org/ProcessManagement
-exec /sbin/pmon
+test -x /sbin/smon && exec /sbin/smon
+exec /bin/sh
 # vim:filetype=sh tabstop=3 shiftwidth=3 expandtab
