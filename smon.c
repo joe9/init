@@ -31,6 +31,8 @@ static struct {
 /* http://www.unixwiz.net/techtips/reading-cdecl.html */
 /*      "go right when you can, go left when you must"  */
 /* rcshutdowncmd is an array of constant pointers to char */
+/* then RUNLEVEL="6" /sbin/rc reboot;   exec /sbin/reboot -f */
+/* else RUNLEVEL="0" /sbin/rc shutdown; exec /sbin/poweroff -f */
 static char *const rcshutdowncmd[] =
    { "/bin/sh", "-c","echo \"shutdown\";",NULL };
 static char *const rcrebootcmd[]   =
@@ -45,54 +47,6 @@ static char *const children[][4]    = {
    { "/bin/sh", "-c","sleep 30; echo \"child 6\";",NULL },
  };
 
-void sigpropogate (char * name, pid_t pids[], int sig) {
-   /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
-   (void)name;
-   size_t i = 0;
-   printf("sigpropogate called\n");
-   for (i = 0; i < LEN(children); i++) if (0 < pids[i]) kill(pids[i],sig);
-}
-void sigreap (char * name, pid_t pids[], int sig) {
-   pid_t wait_pid = 0;
-   size_t i = 0;
-   /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
-   (void)sig;
-   (void)name;
-   
-   printf("sigreap called\n");
-   while (0 < (wait_pid = waitpid(WAIT_ANY, NULL, WNOHANG))) {
-      printf("%d exited\n",wait_pid);
-      for (i = 0; i < LEN(children); i++)
-	 if (wait_pid == pids[i]) { pids[i] = 0; break; }
-   }
-}
-void sigshutdown (char * name, pid_t pids[], int sig) {
-   (void)sig;
-   printf("sigshutdown called\n");
-   sigpropogate(name,pids,SIGTERM);
-   execv (rcshutdowncmd[0], rcshutdowncmd);
-}
-void sigreboot (char * name, pid_t pids[], int sig) {
-   (void)sig;
-   printf("sigreboot called\n");
-   sigpropogate(name,pids,SIGTERM);
-   execv (rcrebootcmd[0], rcrebootcmd);
-}
-void sigrestart (char * name, pid_t pids[], int sig) {
-   char *argv[LEN(children)+2];
-   char pid_str[LEN(children)][15];
-   size_t i = 0;
-
-   printf("sigrestart called\n");
-   sigpropogate(name,pids,sig);
-   for (i = 0; i < LEN(children); i++) sprintf(pid_str[i], "%d", pids[i]);
-
-   argv[0] = name;
-   for (i = 0; i < LEN(children); i++) argv[i+1] = (char *)&(pid_str[i]);
-   argv[i+1] = 0;
-
-   execv (argv[0], argv);
-}
 pid_t spawn(char *const argv[]) {
     pid_t rc_pid = 0;
     int savederrno = 0;
@@ -165,4 +119,53 @@ int main (int argc, char * argv[], char * const *envp) {
     }
     /* not reachable */
     return EXIT_SUCCESS;
+}
+
+void sigpropogate (char * name, pid_t pids[], int sig) {
+   /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
+   (void)name;
+   size_t i = 0;
+   printf("sigpropogate called\n");
+   for (i = 0; i < LEN(children); i++) if (0 < pids[i]) kill(pids[i],sig);
+}
+void sigreap (char * name, pid_t pids[], int sig) {
+   pid_t wait_pid = 0;
+   size_t i = 0;
+   /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
+   (void)sig;
+   (void)name;
+   
+   printf("sigreap called\n");
+   while (0 < (wait_pid = waitpid(WAIT_ANY, NULL, WNOHANG))) {
+      printf("%d exited\n",wait_pid);
+      for (i = 0; i < LEN(children); i++)
+	 if (wait_pid == pids[i]) { pids[i] = 0; break; }
+   }
+}
+void sigshutdown (char * name, pid_t pids[], int sig) {
+   (void)sig;
+   printf("sigshutdown called\n");
+   sigpropogate(name,pids,SIGTERM);
+   execv (rcshutdowncmd[0], rcshutdowncmd);
+}
+void sigreboot (char * name, pid_t pids[], int sig) {
+   (void)sig;
+   printf("sigreboot called\n");
+   sigpropogate(name,pids,SIGTERM);
+   execv (rcrebootcmd[0], rcrebootcmd);
+}
+void sigrestart (char * name, pid_t pids[], int sig) {
+   char *argv[LEN(children)+2];
+   char pid_str[LEN(children)][15];
+   size_t i = 0;
+
+   printf("sigrestart called\n");
+   sigpropogate(name,pids,sig);
+   for (i = 0; i < LEN(children); i++) sprintf(pid_str[i], "%d", pids[i]);
+
+   argv[0] = name;
+   for (i = 0; i < LEN(children); i++) argv[i+1] = (char *)&(pid_str[i]);
+   argv[i+1] = 0;
+
+   execv (argv[0], argv);
 }
