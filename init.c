@@ -12,13 +12,13 @@
 
 #define LEN(x) (sizeof (x) / sizeof *(x))
 
-void sigpropogate (pid_t rc_pid,int sig);
-void sigreap      (pid_t rc_pid,int sig);
-void sigrestart   (pid_t rc_pid,int sig);
+void sigpropogate (char* name, pid_t rc_pid,int sig);
+void sigreap      (char* name, pid_t rc_pid,int sig);
+void sigrestart   (char* name, pid_t rc_pid,int sig);
 
 static struct {
    int signal;
-   void (*handler)(pid_t rc_pid, int sig);
+   void (*handler)(char * name, pid_t rc_pid, int sig);
 } sigmap[] = {
 	{ SIGUSR1, sigpropogate },
 	{ SIGUSR2, sigpropogate },
@@ -28,12 +28,15 @@ static struct {
 /* static char *const rcinitcmd[] = { "/home/j/dev/scripts/init/hello", NULL }; */
 static char *const rcinitcmd[] = { "/etc/rc", NULL };
 
-void sigpropogate (pid_t rc_pid,int sig) {
+void sigpropogate (char* name, pid_t rc_pid,int sig) {
+   /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
+   (void)name;
    if (0 < rc_pid) kill(rc_pid,sig);
 }
-void sigreap (pid_t rc_pid,int sig) {
+void sigreap (char* name, pid_t rc_pid,int sig) {
    pid_t wait_pid = 0;
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
+   (void)name;
    (void)sig;
    printf("sigreap called\n");
    while (0 < (wait_pid = waitpid(WAIT_ANY, NULL, WNOHANG))) {
@@ -44,25 +47,24 @@ void sigreap (pid_t rc_pid,int sig) {
 	}
    }
 }
-void sigrestart (pid_t rc_pid,int sig) {
+void sigrestart (char *name, pid_t rc_pid,int sig) {
    char pid_str[15];
    if (0 < rc_pid)   kill(rc_pid,sig);
    sprintf(pid_str, "%d", rc_pid);
-/*    execv ("/home/j/dev/scripts/init/init" */
-   execv ( "/sbin/init"
-	   , (char * []){ "init",pid_str,0 });
+   execv(name, (char * []){ name,pid_str,0 });
 }
 pid_t spawn(char *const argv[], char * const *envp) {
     pid_t rc_pid = 0;
     int savederrno = 0;
+    sigset_t set;
     /* http://www.cs.cityu.edu.hk/~lwang/fork */
     rc_pid = fork();
     if (0 > rc_pid) perror("fork");
     else if (rc_pid == 0) { /* child */
+	sigfillset(&set);
+	sigprocmask(SIG_UNBLOCK, &set, NULL);
 	setsid ();
 	setpgid (0, 0);
-	/* return execve ("/etc/rc", (char * []){ "rc", 0 }, (char * []){ 0 }); */
-	/* return execve ("/etc/rc", (char * []){ "rc", 0 }, envp); */
 	execve (argv[0],argv,envp);
 /* 	    execve ("/etc/rc", (char * []){ "rc", 0 }, envp); */
 	perror("init: execve /etc/rc");
@@ -76,7 +78,7 @@ pid_t spawn(char *const argv[], char * const *envp) {
 /* using envp as linux kernel sets TERM environment variable which is
  * used by the rc init scripts to figure out if it is a colour
  * terminal. got the below line from runit-init.c */
-int main (int argc, const char * const *argv, char * const *envp) {
+int main (int argc, char * argv[], char * const *envp) {
     sigset_t set;
     int sig = 0;
     size_t i = 0;
@@ -85,20 +87,19 @@ int main (int argc, const char * const *argv, char * const *envp) {
     if (getpid () != 1) return EXIT_FAILURE;
     chdir("/");
 
-    /* block all signals */
-    sigfillset (&set);
-    sigprocmask (SIG_BLOCK, &set, 0);
-
     if (2 == argc && 0 < atoi(argv[1])) rc_pid = atoi(argv[1]);
     printf( "argc: %d, argv[0]: %s, argv[1]: %s pid: %d\n"
        , argc,argv[0],argv[1],rc_pid);
     if (1 == argc) rc_pid = spawn(rcinitcmd,envp);
 	
+    sigfillset (&set);
+    sigprocmask (SIG_BLOCK, &set, 0);
+
     while (1) {
 	sigwait(&set, &sig);
 	for (i = 0; i < LEN(sigmap); i++) {
 	    if (sigmap[i].signal == sig) {
-	       sigmap[i].handler(rc_pid,sig);
+	       sigmap[i].handler(argv[0],rc_pid,sig);
 	       break;
 	    }
 	}
