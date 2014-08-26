@@ -41,7 +41,7 @@ data Args = Args { aDelay        :: Int
                  , aTermReceived :: Bool
                  } deriving (Show)
 
-instance Default Args where def = Args 10 True 0 "" [] False
+instance Default Args where def = Args 0 True 0 "" [] False
 
 type Hup   = Bool
 type Term  = Bool
@@ -49,13 +49,18 @@ type Child = Bool
 
 main :: IO ()
 main = do
+    getArgs >>= (\a -> putStrLn ("program started with " ++ groom a))
+    getProcessID >>= (\a -> putStrLn ("process id: " ++ groom a))
     args <- (getArgs >>= parse def)
+    putStrLn ("program started with " ++ groom args)
     pid <- runOnce args
+    putStrLn "after 1st runOnce"
     let pargs = args{aChildPid = pid}
     h <- newMVar False
     t <- newMVar False
     c <- newMVar False
     installSignalHandlers h t c
+    putStrLn "before loop"
     loop h t c pargs
 
 loop :: MVar Hup -> MVar Term -> MVar Child -> Args -> IO ()
@@ -101,12 +106,15 @@ restart a = do
     putStrLn . show $ a
     env <- getEnvironment
     f <- getExecutablePath
+    putStrLn $ "restart: file is  " ++ f
+    putStrLn $ "restart: args are " ++ groom args
     _ <- executeFile f False args . Just $ env
     return a
-    where args =  [ "-d", show $ aDelay a
+    where args = filter (not . (==) "")
+                   [ "-d", show $ aDelay a
                    , runOnceArg $ aRunOnce a
                    , "-p", show $ aChildPid a
-                   , "--", show $ aCommand a
+                   , "--", aCommand a
                    ] ++ aCommandArgs a
           runOnceArg :: Bool -> String
           runOnceArg True  = "-o"
@@ -172,16 +180,20 @@ parse _ ["--version"] = version >> exitSuccess
 parse a (x:xs)     =
  case x of
     "-d" ->
-        parse a{aDelay = readNote "parse -d" . headNote "parse: -d " $ xs}
+        parse a{ aDelay = readNote "parse -d" . headNote "parse: -d " $ xs
+               , aRunOnce = False
+               }
               (tail xs)
     "-o" -> parse a{aRunOnce = True} xs
     "-p" ->
-        parse a{aDelay = readNote "parse -p" . headNote "parse: -p " $ xs}
-              (tail xs)
+        parse
+          a{aChildPid = readNote "parse -p" . headNote "parse: -p " $ xs}
+          (tail xs)
     "--" -> return $
          a{ aCommand = headNote "parse: --" xs
           , aCommandArgs = tail xs
           }
+    "" -> parse a xs
     _ -> usage >> exitSuccess
 
 usage, version :: IO ()
