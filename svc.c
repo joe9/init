@@ -12,17 +12,35 @@
 #include <unistd.h>
 #include <errno.h>
 
+#define LEN(x) (sizeof (x) / sizeof *(x))
+
 const char *argp_program_bug_address = "joe9mail@gmail.com";
 const char *argp_program_version = "version 0.0.1";
 static int delay = 10; /* default, sleep for 10 seconds between spawns */
 volatile sig_atomic_t respawn = 1;
+static pid_t child_pid = 0;
 
+void sigreap       (int sig);
+void sigrestart    (int sig);
+void sigpropogate  (int sig);
+
+static struct {
+   int signal;
+   void (*handler)(int sig);
+} sigmap[] = {
+	{ SIGCHLD, sigreap      },
+	{ SIGHUP,  sigrestart   },
+	{ SIGTERM, sigpropogate },
+};
 void signal_handler (int sig);
 int spawn (char **argv, char * const *envp);
 static int parse_opt (int key, char *arg, struct argp_state *state);
 
 int main (int argc, char *argv[], char * const *envp) {
-
+   char pid_str[15];
+   char respawn_str[4];
+   char delay_str[15];
+   
    struct argp_option options[] = {
       { .name	= "delay"
       , .key	= 'd'
@@ -35,6 +53,12 @@ int main (int argc, char *argv[], char * const *envp) {
       , .arg	= 0
       , .flags	= OPTION_ARG_OPTIONAL
       , .doc	= "Run once. Do not respawn."
+      },
+      { .name	= "child-pid"
+      , .key	= 'p'
+      , .arg	= "PID"
+      , .flags	= 0
+      , .doc	= "Child pid"
       },
       {0}
     };
@@ -49,9 +73,9 @@ int main (int argc, char *argv[], char * const *envp) {
    };
 
    /* commands to test the below 
-      make respawn args; ./respawn --run-once;
-      ./respawn --run-once -- ; ./respawn --run-once -- ./args ;
-      ./respawn --run-once -- ./args "test"
+      make svc args; ./svc --run-once;
+      ./svc --run-once -- ; ./svc --run-once -- ./args ;
+      ./svc --run-once -- ./args "test"
    */
    int i = 0;
    for (i = 0; i < argc; i++) {
@@ -70,24 +94,60 @@ int main (int argc, char *argv[], char * const *envp) {
    
 /*    printf ("delay: %d, respawn: %d\n", delay,respawn); */
 
-   spawn (&(argv[i]), envp);
-   while (1 == respawn) {
-      sleep(delay);
-      spawn (&(argv[i]), envp);
+   while (0 == restart && 1 == respawn) {
+	spawn (&(argv[i]), envp);
+	sigemptyset (&set);
+	for (i = 0; i < LEN(sigmap); i++) sigaddset(&set,sigmap[i].signal);
+	sigprocmask(SIG_BLOCK, &set, NULL);
+	
+	while (0 < child_pid && 0 == restart){
+	    sigwait(&set, &sig);
+	    for (i = 0; i < LEN(sigmap); i++) {
+		if (sigmap[i].signal == sig) {
+		   sigmap[i].handler(argv[0],pids,sig);
+		   break;
+		}
+	    }
+	}
+	if (0 == restart && 1 == respawn) sleep(delay);
+   }
+   if (1 == restart) {
+     sprintf(pid_str, "%d", child_pid);
+     if (0 == respawn) respawn_str="-o";
+     else respawn_str = "";
+     sprintf(delay_str, "%d", delay);
+     for (i = 0; i < argc; i++) {
+     /*       printf("index: %d, pointer: %p, %s\n", */
+     /* 	     i,(void *)&(argv[i]),argv[i]); */
+	   if (0 == strcmp("--",argv[i])) break;
+}
+     TODO could not figure out how to do the below without using malloc
+     execv ( "/sbin/svc"
+	   , (char * []){ "/sbin/svc"
+		        , "-d"
+		        , delay_str
+		        , respawn_str
+		        , "-p"
+		        , pid_str
+		        , &argv[i] This is wrong. This needs to be all argv's from i ... end
+		        , 0
+		        }
+	   );
    }
    return EXIT_SUCCESS;
 }
-
-static pid_t child_pid;
 
 void signal_handler (int sig) {
    printf("signal_handler\n");
    psignal (sig, "signal_handler");
    respawn = 0;
    kill(child_pid,sig);
+   if (SIGHUP == sig) {
+      restart=1;
+   }
 }
 
-int spawn (char **argv, char * const *envp) {
+pid_t spawn (char **argv, char * const *envp) {
     struct sigaction action;
     static sigset_t set;
     int savederrno;
@@ -103,22 +163,14 @@ int spawn (char **argv, char * const *envp) {
        return EXIT_FAILURE;
     } else if (child_pid > 0) { /* parent */
 
-       /* setup the signal handler to progorate signals to
-	* children */
-	action.sa_handler = signal_handler;
-	sigemptyset (&action.sa_mask);
-	action.sa_flags = 0;
-	sigaction (SIGHUP, &action, NULL);
-	sigaction (SIGINT, &action, NULL);
-	sigaction (SIGTERM, &action, NULL);
-
-	/* unmask signals */
-	sigprocmask (SIG_UNBLOCK, &set, 0);
+        return child_pid;
 
 	/* wait as long as any child is there */
 	/* reap children */
 	/* ignore other pids, EINTR and EINVAL also */
 	while ((wait_pid = wait(0))) if (-1 == wait_pid && ECHILD == errno) break;
+
+
 
 	if (ECHILD == errno) {
 	   printf("All children exited\n");
@@ -155,6 +207,33 @@ static int parse_opt (int key, char *arg, struct argp_state *state) {
 	 respawn = 0;
 	 break;
       }
+      case 'p': {
+	 child_pid = atoi(arg);
+	 break;
+      }
    }
    return 0;
+}
+
+void sigreap (int sig) {
+   pid_t wait_pid = 0;
+   /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
+   (void)sig;
+   
+   printf("sigreap called\n");
+   while (0 < (wait_pid = waitpid(WAIT_ANY, NULL, WNOHANG))) {
+      printf("%d exited\n",wait_pid);
+      if (wait_pid == child_pid) child_pid = 0; 
+   }
+}
+void sigpropogate (int sig) {
+   printf("sigpropogate called\n");
+   kill(child_pid,sig);
+}
+void sigrestart (int sig) {
+   /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
+   (void)sig;
+   printf("sigrestart called\n");
+   /* should I be sending this to child? */
+   restart = 1;
 }

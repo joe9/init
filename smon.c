@@ -28,6 +28,7 @@ static struct {
 	{ SIGHUP,  sigrestart   },
 	{ SIGTERM, sigpropogate },
 };
+/* http://ieng9.ucsd.edu/~cs30x/rt_lt.rule.html */
 /* http://www.unixwiz.net/techtips/reading-cdecl.html */
 /*      "go right when you can, go left when you must"  */
 /* rcshutdowncmd is an array of constant pointers to char */
@@ -59,8 +60,8 @@ pid_t spawn(char *const argv[]) {
     if (0 > rc_pid) perror("fork");
     else if (rc_pid == 0) { /* child */
 	sigprocmask(SIG_UNBLOCK, &set, NULL);
-	setsid ();
-	setpgid (0, 0);
+	/* setsid (); */
+	/* setpgid (0, 0); */
 	execv (argv[0],argv);
 	perror("pmon: execv /etc/pmon");
 	execv ("/bin/sh", (char * []){ "sh", 0 });
@@ -117,7 +118,6 @@ int main (int argc, char * argv[], char * const *envp) {
 	for (i = 0; i < LEN(children) && 0 == pids[i]; i++) ;
 	if (i >= LEN(children)) break;
     }
-    /* not reachable */
     return EXIT_SUCCESS;
 }
 
