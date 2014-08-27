@@ -10,6 +10,8 @@
 #include <errno.h>
 #include <sys/wait.h>
 
+#include "rmon.h"
+
 #define LEN(x) (sizeof (x) / sizeof *(x))
 
 void sigshutdown   (char * name, pid_t pids[], int sig);
@@ -28,25 +30,6 @@ static struct {
 	{ SIGHUP,  sigrestart   },
 	{ SIGTERM, sigpropogate },
 };
-/* http://ieng9.ucsd.edu/~cs30x/rt_lt.rule.html */
-/* http://www.unixwiz.net/techtips/reading-cdecl.html */
-/*      "go right when you can, go left when you must"  */
-/* rcshutdowncmd is an array of constant pointers to char */
-/* then RUNLEVEL="6" /sbin/rc reboot;   exec /sbin/reboot -f */
-/* else RUNLEVEL="0" /sbin/rc shutdown; exec /sbin/poweroff -f */
-static char *const rcshutdowncmd[] =
-   { "/bin/sh", "-c","echo \"shutdown\";",NULL };
-static char *const rcrebootcmd[]   =
-   { "/bin/sh", "-c","echo \"reboot\";",NULL };
-/* rcchildren is an array of an array of 4 constant pointers to char */
-static char *const children[][4]    = {
-   { "/bin/sh", "-c","sleep 30; echo \"child 1\";",NULL },
-   { "/bin/sh", "-c","sleep 30; echo \"child 2\";",NULL },
-   { "/bin/sh", "-c","sleep 30; echo \"child 3\";",NULL },
-   { "/bin/sh", "-c","sleep 30; echo \"child 4\";",NULL },
-   { "/bin/sh", "-c","sleep 30; echo \"child 5\";",NULL },
-   { "/bin/sh", "-c","sleep 30; echo \"child 6\";",NULL },
- };
 
 pid_t spawn(char *const argv[]) {
     pid_t rc_pid = 0;

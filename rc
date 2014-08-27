@@ -20,6 +20,6 @@ fi
 
 # following this for process management
 # http://mywiki.wooledge.org/ProcessManagement
-test -x /sbin/smon && exec /sbin/smon
+test -x /sbin/rmon && exec /sbin/rmon
 exec /bin/sh
 # vim:filetype=sh tabstop=3 shiftwidth=3 expandtab

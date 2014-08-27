@@ -2,18 +2,26 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-import           Control.Concurrent
-import           Data.Default
-import           Safe
-import           System.Environment
-import           System.Exit
+-- base
+import           Control.Concurrent   (Chan, newChan, readChan,
+                                       threadDelay, writeChan)
+import           System.Environment   (getArgs, getEnvironment,
+                                       getExecutablePath)
+import           System.Exit          (exitSuccess)
+-- unix
 import           System.Posix.Process (ProcessStatus, executeFile,
                                        forkProcess,
                                        getAnyProcessStatus,
                                        getProcessID)
-import           System.Posix.Signals
+import           System.Posix.Signals (Handler (Catch), Signal,
+                                       installHandler, sigCHLD,
+                                       sigHUP, sigTERM, signalProcess,
+                                       softwareTermination)
 import           System.Posix.Types   (ProcessID)
-import           Text.Groom
+-- safe
+import           Safe                 (headNote, readNote)
+-- data-default
+import           Data.Default         (Default (..))
 
 data Args = Args { aDelay        :: Int
                  , aRunOnce      :: Bool
@@ -27,10 +35,10 @@ instance Default Args where def = Args 0 True 0 "" [] False
 
 main :: IO ()
 main = do
-    getArgs >>= (\a -> putStrLn ("program started with " ++ groom a))
-    getProcessID >>= (\a -> putStrLn ("process id: " ++ groom a))
+    getArgs >>= (\a -> putStrLn ("program started with " ++ show a))
+    getProcessID >>= (\a -> putStrLn ("process id: " ++ show a))
     args <- getArgs >>= parse def
-    putStrLn ("program started with " ++ groom args)
+    putStrLn ("program started with " ++ show args)
     pid <- runOnce args
     putStrLn "after 1st runOnce"
     let pargs = args{aChildPid = pid}
@@ -64,7 +72,7 @@ respawn a | aChildPid a > 0 = return a
 reap :: Args -> IO Args
 reap a = do
     p <- getAnyProcessStatus True True
-    putStrLn $ "getAnyProcessStatus returned: " ++ groom p
+    putStrLn $ "getAnyProcessStatus returned: " ++ show p
     let args = a{aChildPid = removePid (aChildPid a) p}
     return args
 
@@ -78,7 +86,7 @@ restart a = do
     print a
     f <- getExecutablePath
     putStrLn $ "restart: file is  " ++ f
-    putStrLn $ "restart: args are " ++ groom args
+    putStrLn $ "restart: args are " ++ show args
     run f args
     return a
     where args = filter (not . (==) "")
@@ -131,14 +139,16 @@ parse _ ["--version"] = version >> exitSuccess
 parse a (x:xs)     =
  case x of
     "-d" ->
-        parse a{ aDelay = readNote "parse -d" . headNote "parse: -d " $ xs
+        parse a{ aDelay =
+                     readNote "parse -d" . headNote "parse: -d " $ xs
                , aRunOnce = False
                }
               (tail xs)
     "-o" -> parse a{aRunOnce = True} xs
     "-p" ->
         parse
-          a{aChildPid = readNote "parse -p" . headNote "parse: -p " $ xs}
+          a{aChildPid =
+                readNote "parse -p" . headNote "parse: -p " $ xs}
           (tail xs)
     "--" -> return $
          a{ aCommand = headNote "parse: --" xs

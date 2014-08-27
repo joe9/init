@@ -3,19 +3,23 @@ include config.mk
 .POSIX:
 .SUFFIXES: .c .o
 
-SRC = init.c respawn.c asynx_spawn.c
-SCRIPTS = rc rc.tty
+SRC = init.c rmon.c
+SCRIPTS = rc rc.tty rc.X
 
 OBJ = $(SRC:.c=.o)
 BIN = $(SRC:.c=)
 
-all: options bin scripts
+all: options bin scripts respawn
 
 options:
 	@echo init build options:
 	@echo "CFLAGS   = $(CFLAGS)"
 	@echo "LDFLAGS  = $(LDFLAGS)"
 	@echo "CC       = $(CC)"
+
+respawn: respawn.hs respawn.cabal
+	@cabal configure
+	@cabal build
 
 bin: $(BIN)
 
@@ -60,6 +64,7 @@ install: all
 	@mkdir -p $(DESTDIR)$(MANDIR)/man8
 	@sed "s/VERSION/$(VERSION)/g" < init.8 > $(DESTDIR)$(MANDIR)/man8/init.8
 	@chmod 644 $(DESTDIR)$(MANDIR)/man8/init.8
+	@cabal install
 
 uninstall:
 	@echo removing executable from $(DESTDIR)$(SBINDIR)
@@ -72,3 +77,4 @@ uninstall:
 clean:
 	@echo cleaning
 	@rm -f $(BIN) $(OBJ) init-$(VERSION).tar.gz
+	@cabal clean

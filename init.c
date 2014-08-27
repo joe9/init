@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <sys/wait.h>
 
+static char *const rcinitcmd[] = { "/etc/rc", NULL };
 #define LEN(x) (sizeof (x) / sizeof *(x))
 
 void sigpropogate (char* name, pid_t rc_pid,int sig);
@@ -25,8 +26,6 @@ static struct {
 	{ SIGCHLD, sigreap      },
 	{ SIGHUP,  sigrestart   }
 };
-/* static char *const rcinitcmd[] = { "/home/j/dev/scripts/init/hello", NULL }; */
-static char *const rcinitcmd[] = { "/etc/rc", NULL };
 
 void sigpropogate (char* name, pid_t rc_pid,int sig) {
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
