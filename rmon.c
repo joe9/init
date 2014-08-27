@@ -52,8 +52,6 @@ pid_t spawn(char *const argv[]) {
 	perror("init: execv /bin/sh");
 	_exit(savederrno);
     }
-    /* unblock all signals after fork'ing */
-    sigprocmask (SIG_UNBLOCK, &set, 0);
     return rc_pid;
 }
 /* using envp as linux kernel sets TERM environment variable which is
