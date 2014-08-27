@@ -45,7 +45,9 @@ dist: clean
 	@gzip init-$(VERSION).tar
 	@rm -rf init-$(VERSION)
 
-installx: options rmonxh rc.X installrmon installrc.X
+x: options rmonxh bin scripts rc.X
+
+installx: x installrmon installrc.X
 
 installrc.X:
 	@echo installing rc.X to $(DESTDIR)$(ETCDIR)
@@ -78,7 +80,6 @@ install: all
 	@mkdir -p $(DESTDIR)$(MANDIR)/man8
 	@sed "s/VERSION/$(VERSION)/g" < init.8 > $(DESTDIR)$(MANDIR)/man8/init.8
 	@chmod 644 $(DESTDIR)$(MANDIR)/man8/init.8
-# 	@cabal install
 
 uninstall:
 	@echo removing executable from $(DESTDIR)$(SBINDIR)
@@ -91,4 +92,3 @@ uninstall:
 clean:
 	@echo cleaning
 	@rm -f $(BIN) $(OBJ) init-$(VERSION).tar.gz rmon.h
-# 	@cabal clean
