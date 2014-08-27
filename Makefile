@@ -45,19 +45,25 @@ dist: clean
 	@gzip init-$(VERSION).tar
 	@rm -rf init-$(VERSION)
 
+installx: options rmonxh rc.X installrmon installrc.X
+
 installrc.X:
 	@echo installing rc.X to $(DESTDIR)$(ETCDIR)
 	@mkdir -p $(DESTDIR)$(ETCDIR)
 	@cp -f rc.X $(DESTDIR)$(ETCDIR)
 	@chmod 755 $(DESTDIR)$(ETCDIR)/rc.X
 
-x: rmonx options rmon rc.X
-
-rmonx:
+rmonxh:
 	@cp -f rmon.x.h rmon.h
 
 rmonh:
 	@cp -f rmon.nox.h rmon.h
+
+installrmon: rmon
+	@echo installing executable to $(DESTDIR)$(SBINDIR)
+	@mkdir -p $(DESTDIR)$(SBINDIR)
+	@cp -f rmon $(DESTDIR)$(SBINDIR)
+	@chmod 755 $(DESTDIR)$(SBINDIR)/rmon
 
 install: all
 	@echo installing executable to $(DESTDIR)$(SBINDIR)
@@ -84,5 +90,5 @@ uninstall:
 
 clean:
 	@echo cleaning
-	@rm -f $(BIN) $(OBJ) init-$(VERSION).tar.gz
+	@rm -f $(BIN) $(OBJ) init-$(VERSION).tar.gz rmon.h
 # 	@cabal clean
