@@ -4,12 +4,12 @@ include config.mk
 .SUFFIXES: .c .o
 
 SRC = init.c rmon.c respawn.c
-SCRIPTS = rc rc.tty rc.X
+SCRIPTS = rc rc.tty
 
 OBJ = $(SRC:.c=.o)
 BIN = $(SRC:.c=)
 
-all: options bin scripts
+all: options rmonh bin scripts
 
 options:
 	@echo init build options:
@@ -50,6 +50,14 @@ installrc.X:
 	@mkdir -p $(DESTDIR)$(ETCDIR)
 	@cp -f rc.X $(DESTDIR)$(ETCDIR)
 	@chmod 755 $(DESTDIR)$(ETCDIR)/rc.X
+
+x: rmonx options rmon rc.X
+
+rmonx:
+	@cp -f rmon.x.h rmon.h
+
+rmonh:
+	@cp -f rmon.nox.h rmon.h
 
 install: all
 	@echo installing executable to $(DESTDIR)$(SBINDIR)
