@@ -21,18 +21,19 @@ static int delay = 10; /* default, sleep for 10 seconds between spawns */
 volatile sig_atomic_t respawn = 1;
 static pid_t child_pid = 0;
 
-void sigreap       (int sig);
-void sigrestart    (int sig);
-void sigpropogate  (int sig);
+void sigreap      (int sig);
+void sigrestart   (int sig);
+void sigterm      (int sig);
+void sigpropogate (int sig);
 
 static int restart = 0;
 static struct {
    int signal;
    void (*handler)(int sig);
 } sigmap[] = {
-	{ SIGCHLD, sigreap      },
-	{ SIGHUP,  sigrestart   },
-	{ SIGTERM, sigpropogate },
+	{ SIGCHLD, sigreap    },
+	{ SIGHUP,  sigrestart },
+	{ SIGTERM, sigterm    },
 };
 void signal_handler (int sig);
 pid_t spawn(char * argv[]) ;
@@ -197,16 +198,6 @@ int main (int argc, char * argv[], char * const *envp) {
    return EXIT_SUCCESS;
 }
 
-void signal_handler (int sig) {
-   printf("signal_handler\n");
-   psignal (sig, "signal_handler");
-   respawn = 0;
-   kill(child_pid,sig);
-   if (SIGHUP == sig) {
-      restart=1;
-   }
-}
-
 pid_t spawn(char * argv[]) {
    pid_t rc_pid = 0;
    int savederrno = 0;
@@ -273,6 +264,11 @@ void sigreap (int sig) {
 void sigpropogate (int sig) {
    printf("sigpropogate called\n");
    kill(child_pid,sig);
+}
+void sigterm (int sig) {
+   printf("sigterm called\n");
+   sigpropogate (sig);
+   restart = respawn = 0;
 }
 void sigrestart (int sig) {
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
