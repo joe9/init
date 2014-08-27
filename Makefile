@@ -17,10 +17,6 @@ options:
 	@echo "LDFLAGS  = $(LDFLAGS)"
 	@echo "CC       = $(CC)"
 
-# respawn: respawn.hs respawn.cabal
-# 	@cabal configure
-# 	@cabal build
-
 bin: $(BIN)
 
 scripts: $(SCRIPTS)
@@ -40,14 +36,14 @@ dist: clean
 	@mkdir -p init-$(VERSION)
 	@cp Makefile README config.mk init.8 init.c \
 	 	respawn.c asynx_spawn.c rc rc.tty rc.X \
-		init-$(VERSION)
+		init-$(VERSION) rmon.c rmon.x.h rmon.nox.h
 	@tar -cf init-$(VERSION).tar init-$(VERSION)
 	@gzip init-$(VERSION).tar
 	@rm -rf init-$(VERSION)
 
 x: options rmonxh bin scripts rc.X
 
-installx: x installrmon installrc.X
+installx: x installonly installrc.X
 
 installrc.X:
 	@echo installing rc.X to $(DESTDIR)$(ETCDIR)
@@ -61,13 +57,9 @@ rmonxh:
 rmonh:
 	@cp -f rmon.nox.h rmon.h
 
-installrmon: rmon
-	@echo installing executable to $(DESTDIR)$(SBINDIR)
-	@mkdir -p $(DESTDIR)$(SBINDIR)
-	@cp -f rmon $(DESTDIR)$(SBINDIR)
-	@chmod 755 $(DESTDIR)$(SBINDIR)/rmon
+install: all installonly
 
-install: all
+installonly:
 	@echo installing executable to $(DESTDIR)$(SBINDIR)
 	@mkdir -p $(DESTDIR)$(SBINDIR)
 	@cp -f $(BIN) $(DESTDIR)$(SBINDIR)
