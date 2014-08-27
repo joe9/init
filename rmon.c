@@ -34,11 +34,11 @@ static struct {
 pid_t spawn(char *const argv[]) {
     pid_t rc_pid = 0;
     int savederrno = 0;
-    sigset_t set;
+    sigset_t set, old;
     /* http://www.cs.cityu.edu.hk/~lwang/fork */
     /* block all signals before fork'ing */
     sigfillset (&set);
-    sigprocmask (SIG_BLOCK, &set, 0);
+    sigprocmask (SIG_BLOCK, &set, &old);
     rc_pid = fork();
     if (0 > rc_pid) perror("fork");
     else if (rc_pid == 0) { /* child */
@@ -52,6 +52,7 @@ pid_t spawn(char *const argv[]) {
 	perror("init: execv /bin/sh");
 	_exit(savederrno);
     }
+    sigprocmask (SIG_SETMASK, &old, 0);
     return rc_pid;
 }
 /* using envp as linux kernel sets TERM environment variable which is
@@ -64,6 +65,10 @@ int main (int argc, char * argv[], char * const *envp) {
     pid_t pids[LEN(children)];
     (void)envp;
 	
+    sigemptyset (&set);
+    for (i = 0; i < LEN(sigmap); i++) sigaddset(&set,sigmap[i].signal);
+    sigprocmask(SIG_BLOCK, &set, NULL);
+
     for (i = 0; i < LEN(children); i++) pids[i] = 0;
 
     printf( "argc: %d\n", argc);
@@ -83,10 +88,6 @@ int main (int argc, char * argv[], char * const *envp) {
        printf("%d: %d, ",(int)i,pids[i]);
     printf("\n");
 	
-    sigemptyset (&set);
-    for (i = 0; i < LEN(sigmap); i++) sigaddset(&set,sigmap[i].signal);
-    sigprocmask(SIG_BLOCK, &set, NULL);
-
     while (1) {
 	sigwait(&set, &sig);
 	for (i = 0; i < LEN(sigmap); i++) {
