@@ -43,7 +43,7 @@ dist: clean
 	@gzip init-$(VERSION).tar
 	@rm -rf init-$(VERSION)
 
-installx: x installonly installrc.X
+installx: allx installonly installrc.X
 
 installrc.X:
 	@echo installing rc.X to $(DESTDIR)$(ETCDIR)
