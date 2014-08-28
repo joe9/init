@@ -11,6 +11,8 @@ BIN = $(SRC:.c=)
 
 all: options rmonh bin scripts
 
+allx: options rmonxh bin scripts rc.X
+
 options:
 	@echo init build options:
 	@echo "CFLAGS   = $(CFLAGS)"
@@ -40,8 +42,6 @@ dist: clean
 	@tar -cf init-$(VERSION).tar init-$(VERSION)
 	@gzip init-$(VERSION).tar
 	@rm -rf init-$(VERSION)
-
-x: options rmonxh bin scripts rc.X
 
 installx: x installonly installrc.X
 
