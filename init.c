@@ -37,7 +37,7 @@ void sigreap (char* name, pid_t rc_pid,int sig) {
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
    (void)name;
    (void)sig;
-   printf("sigreap called\n");
+   /* printf("sigreap called\n"); */
    while (0 < (wait_pid = waitpid(WAIT_ANY, NULL, WNOHANG))) {
 	if (rc_pid == wait_pid) {
 	    /* do not bother with signalling as rc

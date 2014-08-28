@@ -71,10 +71,10 @@ int main (int argc, char * argv[], char * const *envp) {
 
     for (i = 0; i < LEN(children); i++) pids[i] = 0;
 
-    printf( "argc: %d\n", argc);
-    for (i = 0; i < (size_t)argc; i++)
-       printf("argv[%d]: %s",(int)i,argv[i]);
-    printf("\n");
+/*     printf( "argc: %d\n", argc); */
+/*     for (i = 0; i < (size_t)argc; i++) */
+/*        printf("argv[%d]: %s",(int)i,argv[i]); */
+/*     printf("\n"); */
 
     if (1 == argc) {
        for (i = 0; i < LEN(children); i++) pids[i] = spawn(children[i]);
@@ -83,10 +83,10 @@ int main (int argc, char * argv[], char * const *envp) {
           if (0 < atoi(argv[i+1])) pids[i] = atoi(argv[i+1]);
     }
 
-    printf("pids: ");
-    for (i = 0; i < LEN(children); i++)
-       printf("%d: %d, ",(int)i,pids[i]);
-    printf("\n");
+/*     printf("pids: "); */
+/*     for (i = 0; i < LEN(children); i++) */
+/*        printf("%d: %d, ",(int)i,pids[i]); */
+/*     printf("\n"); */
 	
     while (1) {
 	sigwait(&set, &sig);
@@ -107,7 +107,7 @@ void sigpropogate (char * name, pid_t pids[], int sig) {
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
    (void)name;
    size_t i = 0;
-   printf("sigpropogate called\n");
+/*    printf("sigpropogate called\n"); */
    for (i = 0; i < LEN(children); i++) if (0 < pids[i]) kill(pids[i],sig);
 }
 void sigreap (char * name, pid_t pids[], int sig) {
@@ -117,9 +117,9 @@ void sigreap (char * name, pid_t pids[], int sig) {
    (void)sig;
    (void)name;
    
-   printf("sigreap called\n");
+/*    printf("sigreap called\n"); */
    while (0 < (wait_pid = waitpid(WAIT_ANY, NULL, WNOHANG))) {
-      printf("%d exited\n",wait_pid);
+/*       printf("%d exited\n",wait_pid); */
       for (i = 0; i < LEN(children); i++)
 	 if (wait_pid == pids[i]) { pids[i] = 0; break; }
    }
