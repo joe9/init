@@ -112,11 +112,11 @@ int main (int argc, char * argv[], char * const *envp) {
       ./respawn --run-once -- ./args "test"
    */
    for (i = 0; i < (size_t)argc; i++) {
-      printf("index: %d, pointer: %p, %s\n",
-	     (int)i,(void *)&(argv[i]),argv[i]);
+/*       printf("index: %d, pointer: %p, %s\n", */
+/* 	     (int)i,(void *)&(argv[i]),argv[i]); */
       if (0 == strcmp("--",argv[i])) break;
    }
-   printf("argc: %d, no: %d\n",argc,(int)i);
+/*    printf("argc: %d, no: %d\n",argc,(int)i); */
    if (i == (size_t)argc) {
      printf("-- command not provided\n");
      return EXIT_FAILURE;
@@ -125,13 +125,13 @@ int main (int argc, char * argv[], char * const *envp) {
      return EXIT_FAILURE;
    } else cmd = &argv[i+1]; /* to skip the -- */
 
-   for (j=0;j < (size_t)argc-i; j++) {
-      printf("cmd index: %d, pointer: %p, %s\n",
-	     (int)i,(void *)&(cmd[j]),cmd[j]);
-   }
+/*    for (j=0;j < (size_t)argc-i; j++) { */
+/*       printf("cmd index: %d, pointer: %p, %s\n", */
+/* 	     (int)i,(void *)&(cmd[j]),cmd[j]); */
+/*    } */
    
-   printf ( "delay: %d, respawn: %d, child-pid: %d\n"
-	  , delay,respawn, child_pid );
+/*    printf ( "delay: %d, respawn: %d, child-pid: %d\n" */
+/* 	  , delay,respawn, child_pid ); */
 
    if (0 == child_pid) {
      child_pid = spawn(cmd);
@@ -176,23 +176,23 @@ int main (int argc, char * argv[], char * const *envp) {
 	j = 6;
 
 	for (i = 0; i < (size_t)argc; i++) {
-	   printf("index: %d, pointer: %p, %s\n",
-		 (int)i,(void *)&(argv[i]),argv[i]);
+/* 	   printf("index: %d, pointer: %p, %s\n", */
+/* 		 (int)i,(void *)&(argv[i]),argv[i]); */
 	   if (0 == strcmp("--",argv[i])) break;
 	}
 	while (i < (size_t)argc) {
 	  args[j] = argv[i]; j++; i++;
 	}
 
-	for (i = 0; i < (size_t)argc; i++)
-	  printf("index: %d, argv pointer: %p, %s\n",
-		(int)i,(void *)&(argv[i]),argv[i]);
-	i = 0;
-	while (NULL != args[i]){
-	    printf("index: %d, args pointer: %p, %s\n",
-		  (int)i,(void *)&(args[i]),args[i]);
-	    i++;
-	}
+/* 	for (i = 0; i < (size_t)argc; i++) */
+/* 	  printf("index: %d, argv pointer: %p, %s\n", */
+/* 		(int)i,(void *)&(argv[i]),argv[i]); */
+/* 	i = 0; */
+/* 	while (NULL != args[i]){ */
+/* 	    printf("index: %d, args pointer: %p, %s\n", */
+/* 		  (int)i,(void *)&(args[i]),args[i]); */
+/* 	    i++; */
+/* 	} */
 	execv ( args[0], args );
    }
    return EXIT_SUCCESS;
@@ -255,25 +255,25 @@ void sigreap (int sig) {
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
    (void)sig;
    
-   printf("sigreap called\n");
+/*    printf("sigreap called\n"); */
    while (0 < (wait_pid = waitpid(WAIT_ANY, NULL, WNOHANG))) {
-      printf("%d exited\n",wait_pid);
+/*       printf("%d exited\n",wait_pid); */
       if (wait_pid == child_pid) child_pid = 0; 
    }
 }
 void sigpropogate (int sig) {
-   printf("sigpropogate called\n");
+/*    printf("sigpropogate called\n"); */
    kill(child_pid,sig);
 }
 void sigterm (int sig) {
-   printf("sigterm called\n");
+/*    printf("sigterm called\n"); */
    sigpropogate (sig);
    restart = respawn = 0;
 }
 void sigrestart (int sig) {
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
    (void)sig;
-   printf("sigrestart called\n");
+/*    printf("sigrestart called\n"); */
    /* should I be sending this to child? */
    restart = 1;
 }
