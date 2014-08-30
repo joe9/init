@@ -8,7 +8,9 @@ M Farkas-Dyck's init[3].
 Why?
 ----
 
-To simplify operations.
+1. To simplify operations
+2. To follow the principles laid out here
+http://mywiki.wooledge.org/ProcessManagement for process management
 
 [1] https://gist.github.com/rofl0r/6168719
 [2] http://git.suckless.org/sinit/
