@@ -31,30 +31,8 @@ static struct {
 	{ SIGTERM, sigpropogate },
 };
 
-pid_t spawn(char *const argv[]) {
-    pid_t rc_pid = 0;
-    int savederrno = 0;
-    sigset_t set, old;
-    /* http://www.cs.cityu.edu.hk/~lwang/fork */
-    /* block all signals before fork'ing */
-    sigfillset (&set);
-    sigprocmask (SIG_BLOCK, &set, &old);
-    rc_pid = fork();
-    if (0 > rc_pid) perror("fork");
-    else if (rc_pid == 0) { /* child */
-	sigprocmask(SIG_UNBLOCK, &set, NULL);
-	/* setsid (); */
-	/* setpgid (0, 0); */
-	execv (argv[0],argv);
-	perror("pmon: execv /etc/pmon");
-	execv ("/bin/sh", (char * []){ "sh", 0 });
-	savederrno = errno;
-	perror("init: execv /bin/sh");
-	_exit(savederrno);
-    }
-    sigprocmask (SIG_SETMASK, &old, 0);
-    return rc_pid;
-}
+pid_t spawn(char *const argv[]) ;
+
 /* using envp as linux kernel sets TERM environment variable which is
  * used by the rc init scripts to figure out if it is a colour
  * terminal. got the below line from runit-init.c */
@@ -150,4 +128,29 @@ void sigrestart (char * name, pid_t pids[], int sig) {
    argv[i+1] = 0;
 
    execv (argv[0], argv);
+}
+
+pid_t spawn(char *const argv[]) {
+    pid_t rc_pid = 0;
+    int savederrno = 0;
+    sigset_t set, old;
+    /* http://www.cs.cityu.edu.hk/~lwang/fork */
+    /* block all signals before fork'ing */
+    sigfillset (&set);
+    sigprocmask (SIG_BLOCK, &set, &old);
+    rc_pid = fork();
+    if (0 > rc_pid) perror("fork");
+    else if (rc_pid == 0) { /* child */
+	sigprocmask(SIG_UNBLOCK, &set, NULL);
+	/* setsid (); */
+	/* setpgid (0, 0); */
+	execv (argv[0],argv);
+	perror("pmon: execv /etc/pmon");
+	execv ("/bin/sh", (char * []){ "sh", 0 });
+	savederrno = errno;
+	perror("init: execv /bin/sh");
+	_exit(savederrno);
+    }
+    sigprocmask (SIG_SETMASK, &old, 0);
+    return rc_pid;
 }
