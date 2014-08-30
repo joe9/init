@@ -13,6 +13,7 @@
 static char *const rcinitcmd[] = { "/etc/rc", NULL };
 #define LEN(x) (sizeof (x) / sizeof *(x))
 
+pid_t spawn(char *const argv[], char * const *envp);
 void sigpropogate (char* name, pid_t rc_pid,int sig);
 void sigreap      (char* name, pid_t rc_pid,int sig);
 void sigrestart   (char* name, pid_t rc_pid,int sig);
@@ -26,6 +27,39 @@ static struct {
 	{ SIGCHLD, sigreap      },
 	{ SIGHUP,  sigrestart   }
 };
+
+/* using envp as linux kernel sets TERM environment variable which is
+ * used by the rc init scripts to figure out if it is a colour
+ * terminal. got the below line from runit-init.c */
+int main (int argc, char * argv[], char * const *envp) {
+    sigset_t set;
+    int sig = 0;
+    size_t i = 0;
+    pid_t rc_pid = 0;
+	
+    if (getpid () != 1) return EXIT_FAILURE;
+    chdir("/");
+
+    if (2 == argc && 0 < atoi(argv[1])) rc_pid = atoi(argv[1]);
+    printf( "argc: %d, argv[0]: %s, argv[1]: %s pid: %d\n"
+       , argc,argv[0],argv[1],rc_pid);
+    if (1 == argc) rc_pid = spawn(rcinitcmd,envp);
+	
+    sigfillset (&set);
+    sigprocmask (SIG_BLOCK, &set, 0);
+
+    while (1) {
+	sigwait(&set, &sig);
+	for (i = 0; i < LEN(sigmap); i++) {
+	    if (sigmap[i].signal == sig) {
+	       sigmap[i].handler(argv[0],rc_pid,sig);
+	       break;
+	    }
+	}
+    }
+    /* not reachable */
+    return EXIT_SUCCESS;
+}
 
 void sigpropogate (char* name, pid_t rc_pid,int sig) {
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
@@ -74,36 +108,3 @@ pid_t spawn(char *const argv[], char * const *envp) {
     }
     return rc_pid;
 }
-/* using envp as linux kernel sets TERM environment variable which is
- * used by the rc init scripts to figure out if it is a colour
- * terminal. got the below line from runit-init.c */
-int main (int argc, char * argv[], char * const *envp) {
-    sigset_t set;
-    int sig = 0;
-    size_t i = 0;
-    pid_t rc_pid = 0;
-	
-    if (getpid () != 1) return EXIT_FAILURE;
-    chdir("/");
-
-    if (2 == argc && 0 < atoi(argv[1])) rc_pid = atoi(argv[1]);
-    printf( "argc: %d, argv[0]: %s, argv[1]: %s pid: %d\n"
-       , argc,argv[0],argv[1],rc_pid);
-    if (1 == argc) rc_pid = spawn(rcinitcmd,envp);
-	
-    sigfillset (&set);
-    sigprocmask (SIG_BLOCK, &set, 0);
-
-    while (1) {
-	sigwait(&set, &sig);
-	for (i = 0; i < LEN(sigmap); i++) {
-	    if (sigmap[i].signal == sig) {
-	       sigmap[i].handler(argv[0],rc_pid,sig);
-	       break;
-	    }
-	}
-    }
-    /* not reachable */
-    return EXIT_SUCCESS;
-}
-
