@@ -76,6 +76,7 @@ data Signal = -- NULL |
               deriving (Enum, Read, Show)
 
 -- runghc PSSignals.hs 9
+-- runghc PSSignals.hs 0000000188014007 0000000000000000 0000000000001000
 main :: IO ()
 main =
  getArgs
