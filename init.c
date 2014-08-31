@@ -99,7 +99,6 @@ pid_t spawn(char *const argv[], char * const *envp) {
 	setsid ();
 	setpgid (0, 0);
 	execve (argv[0],argv,envp);
-/* 	    execve ("/etc/rc", (char * []){ "rc", 0 }, envp); */
 	perror("init: execve /etc/rc");
 	execve ("/bin/sh", (char * []){ "sh", 0 }, envp);
 	savederrno = errno;
