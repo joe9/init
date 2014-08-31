@@ -145,7 +145,7 @@ pid_t spawn(char *const argv[]) {
 	/* setsid (); */
 	/* setpgid (0, 0); */
 	execv (argv[0],argv);
-	perror("pmon: execv /etc/pmon");
+	perror("rmon: execv /etc/rmon");
 	execv ("/bin/sh", (char * []){ "sh", 0 });
 	savederrno = errno;
 	perror("init: execv /bin/sh");

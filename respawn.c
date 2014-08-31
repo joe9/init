@@ -202,7 +202,6 @@ pid_t spawn(char * argv[]) {
    pid_t rc_pid = 0;
    int savederrno = 0;
    sigset_t set, old;
-/*    TODO move blocking code to the main loop */
    /* http://www.cs.cityu.edu.hk/~lwang/fork */
    /* block all signals before fork'ing */
    sigfillset (&set);
