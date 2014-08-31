@@ -12,6 +12,12 @@ Why?
 2. To follow the principles laid out at
 http://mywiki.wooledge.org/ProcessManagement for process management
 
+Gentoo Ebuild
+----
+
+https://github.com/joe9/portage/tree/master/sys-process/simple-init
+
+
 [1] https://gist.github.com/rofl0r/6168719
 [2] http://git.suckless.org/sinit/
 [3] https://github.com/strake/init
