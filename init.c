@@ -11,16 +11,17 @@
 #include <sys/wait.h>
 
 static char *const rcinitcmd[] = { "/etc/rc", NULL };
+/* static char *const rcinitcmd[] = { "./hello",NULL }; */
 #define LEN(x) (sizeof (x) / sizeof *(x))
 
 pid_t spawn(char *const argv[], char * const *envp);
-void sigpropogate (char* name, pid_t rc_pid,int sig);
-void sigreap      (char* name, pid_t rc_pid,int sig);
-void sigrestart   (char* name, pid_t rc_pid,int sig);
+void sigpropogate (char* name, pid_t *rc_pid,int sig);
+void sigreap      (char* name, pid_t *rc_pid,int sig);
+void sigrestart   (char* name, pid_t *rc_pid,int sig);
 
 static struct {
    int signal;
-   void (*handler)(char * name, pid_t rc_pid, int sig);
+   void (*handler)(char * name, pid_t *rc_pid, int sig);
 } sigmap[] = {
 	{ SIGUSR1, sigpropogate },
 	{ SIGUSR2, sigpropogate },
@@ -52,7 +53,7 @@ int main (int argc, char * argv[], char * const *envp) {
 	sigwait(&set, &sig);
 	for (i = 0; i < LEN(sigmap); i++) {
 	    if (sigmap[i].signal == sig) {
-	       sigmap[i].handler(argv[0],rc_pid,sig);
+	       sigmap[i].handler(argv[0],&rc_pid,sig);
 	       break;
 	    }
 	}
@@ -61,29 +62,29 @@ int main (int argc, char * argv[], char * const *envp) {
     return EXIT_SUCCESS;
 }
 
-void sigpropogate (char* name, pid_t rc_pid,int sig) {
+void sigpropogate (char* name, pid_t *rc_pid,int sig) {
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
    (void)name;
-   if (0 < rc_pid) kill(rc_pid,sig);
+   if (0 < *rc_pid) kill(*rc_pid,sig);
 }
-void sigreap (char* name, pid_t rc_pid,int sig) {
+void sigreap (char* name, pid_t *rc_pid,int sig) {
    pid_t wait_pid = 0;
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
    (void)name;
    (void)sig;
    /* printf("sigreap called\n"); */
    while (0 < (wait_pid = waitpid(WAIT_ANY, NULL, WNOHANG))) {
-	if (rc_pid == wait_pid) {
+	if (*rc_pid == wait_pid) {
 	    /* do not bother with signalling as rc
 	     * child does not exist anymore */
-	    rc_pid = 0;
+	    *rc_pid = 0;
 	}
    }
 }
-void sigrestart (char *name, pid_t rc_pid,int sig) {
+void sigrestart (char *name, pid_t *rc_pid,int sig) {
    char pid_str[15];
-   if (0 < rc_pid)   kill(rc_pid,sig);
-   sprintf(pid_str, "%d", rc_pid);
+   if (0 < *rc_pid)   kill(*rc_pid,sig);
+   sprintf(pid_str, "%d", *rc_pid);
    execv(name, (char * []){ name,pid_str,0 });
 }
 pid_t spawn(char *const argv[], char * const *envp) {
