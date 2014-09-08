@@ -78,9 +78,9 @@ int main (int argc, char * argv[], char * const *envp) {
 
    /* if there is an upgrade and the arguments differ, the program
     * should not crash but just use whatever it can */
-   if (0 != argp_parse (&argp,argc, argv, ARGP_IN_ORDER,0,0)) {
+   if (0 != argp_parse (&argp,argc, argv, ARGP_IN_ORDER|ARGP_NO_EXIT,0,0)) {
+      printf ("WARN: could not parse all arguments\n");
       /* perror ("could not parse arguments"); */
-      printf ("could not parse arguments, but still continuing\n");
    };
 
    /* used by sleepcmd command */
