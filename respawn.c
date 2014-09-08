@@ -76,9 +76,11 @@ int main (int argc, char * argv[], char * const *envp) {
       sigaddset(&set,sigmap[i].signal);
    sigprocmask(SIG_SETMASK, &set, NULL);
 
-/*    if (0 != argp_parse (&argp,argc, argv, ARGP_IN_ORDER,0,0)) { */
-/*       perror ("could not parse arguments"); */
-/*    }; */
+   /* if there is an upgrade and the arguments differ, the program
+    * should not crash but just use whatever it can */
+   /* if (0 != argp_parse (&argp,argc, argv, ARGP_IN_ORDER,0,0)) {
+         perror ("could not parse arguments");
+      }; */
 
    /* used by sleepcmd command */
    sprintf(delay_str, "%d", delay);
