@@ -15,7 +15,12 @@ static char *const children[][4]    = {
    { "/bin/sh", "-c","exec /sbin/respawn -d 10 -- /etc/rc.tty 3",NULL },
    { "/bin/sh", "-c","exec /sbin/respawn -d 10 -- /etc/rc.tty 4",NULL },
    { "/bin/sh", "-c","exec /sbin/respawn -d 10 -- /etc/rc.tty 5",NULL },
-   { "/bin/sh", "-c","exec /sbin/respawn -d 60 -- /etc/rc.X",NULL },
+   /* can get rid of "spawn" when rmon has the functionality to figure out
+      which signals it can propogate to it's children. For example,
+      most programs exit when HUP'ed (instead of reloading). If I
+      start rc.X without spawn, it will exit when rmon propogates HUP
+      to it's children */
+   { "/bin/sh", "-c","exec /sbin/spawn -- /etc/rc.X",NULL },
 /*    { "/home/j/dev/scripts/init/respawn","--","/home/j/dev/scripts/init/hello",NULL }, */
 /*    { "/bin/sh", "-c","sleep 30; echo \"child 6\";",NULL }, */
  };

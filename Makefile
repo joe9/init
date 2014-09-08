@@ -3,7 +3,7 @@ include config.mk
 .POSIX:
 .SUFFIXES: .c .o
 
-SRC = init.c rmon.c respawn.c
+SRC = init.c rmon.c respawn.c spawn.c
 SCRIPTS = rc rc.tty
 
 OBJ = $(SRC:.c=.o)
@@ -37,8 +37,10 @@ dist: clean
 	@echo creating dist tarball
 	@mkdir -p init-$(VERSION)
 	@cp Makefile README config.mk init.8 init.c \
-	 	respawn.c asynx_spawn.c rc rc.tty rc.X \
-		init-$(VERSION) rmon.c rmon.x.h rmon.nox.h
+	 	respawn.c spawn.c asynx_spawn.c \
+		rc rc.tty rc.X \
+		init-$(VERSION) \
+		rmon.c rmon.x.h rmon.nox.h
 	@tar -cf init-$(VERSION).tar init-$(VERSION)
 	@gzip init-$(VERSION).tar
 	@rm -rf init-$(VERSION)
