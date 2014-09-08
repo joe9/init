@@ -213,7 +213,7 @@ pid_t spawn(char * argv[]) {
 	/* setsid (); */
 	/* setpgid (0, 0); */
 	execv (argv[0],argv);
-	perror("pmon: execv /etc/pmon");
+	perror("respawn - execv failed:");
 	execv ("/bin/sh", (char * []){ "sh", 0 });
 	savederrno = errno;
 	perror("init: execv /bin/sh");
