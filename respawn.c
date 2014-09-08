@@ -18,18 +18,17 @@ const char *argp_program_bug_address = "joe9mail@gmail.com";
 const char *argp_program_version = "version 0.0.1";
 
 static int delay = 10; /* default, sleep for 10 seconds between spawns */
-volatile sig_atomic_t respawn = 1;
+static int respawn = 1;
 static pid_t child_pid = 0;
 
-void sigreap      (int sig);
-void sigrestart   (int sig);
-void sigterm      (int sig);
+void sigreap      (int argc, char * argv[], int sig);
+void sigrestart   (int argc, char * argv[], int sig);
+void sigterm      (int argc, char * argv[], int sig);
 void sigpropogate (int sig);
 
-static int restart = 0;
 static struct {
    int signal;
-   void (*handler)(int sig);
+   void (*handler)(int argc, char * argv[], int sig);
 } sigmap[] = {
 	{ SIGCHLD, sigreap    },
 	{ SIGHUP,  sigrestart },
@@ -42,20 +41,10 @@ static void *xmalloc(size_t);
 static int parse_opt (int key, char *arg, struct argp_state *state);
 
 int main (int argc, char * argv[], char * const *envp) {
-   char pid_option[]   = "-p";
-   char delay_option[] = "-d";
-   char run_once_option[] = "-o";
-   char pid_str[15] = {0};
    char delay_str[15] = {0};
-   /* +2 for -p <pid>,
-      +2 for -d <delay>,
-      +1 for "-o" or "-r",
-      +1 for trailing null character */
-/*    char *args[argc+2+2+1+1] = {0}; */
-   char **args;
    char **cmd; /* will be lesser than argc */
    sigset_t set;
-   size_t i = 0, j = 0;
+   size_t i = 0;
    /* do not sleep for the first respawn after restart */
    int sig = 0, sleeping = 1;
    char *sleepcmd[] = {"/usr/bin/sleep",&delay_str[0],NULL};
@@ -67,18 +56,6 @@ int main (int argc, char * argv[], char * const *envp) {
       , .arg	= "SECONDS"
       , .flags	= 0
       , .doc	= "Delay period between spawns"
-      },
-      { .name	= "run-once"
-      , .key	= 'o'
-      , .arg	= 0
-      , .flags	= OPTION_ARG_OPTIONAL
-      , .doc	= "Run once. Do not respawn."
-      },
-      { .name	= "respawn"
-      , .key	= 'r'
-      , .arg	= 0
-      , .flags	= OPTION_ARG_OPTIONAL
-      , .doc	= "Respawn"
       },
       { .name	= "child-pid"
       , .key	= 'p'
@@ -138,16 +115,16 @@ int main (int argc, char * argv[], char * const *envp) {
      sleeping = 0;
    }
    while (1) {
-      while (0 < child_pid && 0 == restart){
+      while (0 < child_pid){
 	 sigwait(&set, &sig);
 	 for (i = 0; i < LEN(sigmap); i++) {
 	    if (sigmap[i].signal == sig) {
-	       sigmap[i].handler(sig);
+	       sigmap[i].handler(argc,argv,sig);
 	       break;
 	    }
 	 }
       }
-      if (1 == restart || 0 == respawn) break;
+      if (0 == respawn) break;
       if (sleeping || 0 == delay) {
          child_pid = spawn(cmd);
          sleeping = 0;
@@ -155,45 +132,6 @@ int main (int argc, char * argv[], char * const *envp) {
          child_pid = spawn(sleepcmd);
          sleeping = 1;
       }
-   }
-
-   if (1 == restart) {
-	sprintf(pid_str, "%d", child_pid);
-	sprintf(delay_str, "%d", delay);
-	if (1 == respawn) run_once_option[1] = 'r';
-
-	args = xmalloc(argc+6*sizeof(char *));
-
-	for (i = 0; i < (size_t)(argc+6*sizeof(char *)); i++)
-	   args[i] = 0;
-
-	args[0] = argv[0];
-	args[1] = (char *)&pid_option[0];
-	args[2] = (char *)&pid_str[0];
-	args[3] = (char *)&delay_option[0];
-	args[4] = (char *)&delay_str[0];
-	args[5] = (char *)&run_once_option[0];
-	j = 6;
-
-	for (i = 0; i < (size_t)argc; i++) {
-/* 	   printf("index: %d, pointer: %p, %s\n", */
-/* 		 (int)i,(void *)&(argv[i]),argv[i]); */
-	   if (0 == strcmp("--",argv[i])) break;
-	}
-	while (i < (size_t)argc) {
-	  args[j] = argv[i]; j++; i++;
-	}
-
-/* 	for (i = 0; i < (size_t)argc; i++) */
-/* 	  printf("index: %d, argv pointer: %p, %s\n", */
-/* 		(int)i,(void *)&(argv[i]),argv[i]); */
-/* 	i = 0; */
-/* 	while (NULL != args[i]){ */
-/* 	    printf("index: %d, args pointer: %p, %s\n", */
-/* 		  (int)i,(void *)&(args[i]),args[i]); */
-/* 	    i++; */
-/* 	} */
-	execv ( args[0], args );
    }
    return EXIT_SUCCESS;
 }
@@ -233,14 +171,6 @@ static int parse_opt (int key, char *arg, struct argp_state *state) {
 	 delay = atoi(arg);
 	 break;
       }
-      case 'o': {
-	 respawn = 0;
-	 break;
-      }
-      case 'r': {
-	 respawn = 1;
-	 break;
-      }
       case 'p': {
 	 child_pid = atoi(arg);
 	 break;
@@ -249,9 +179,11 @@ static int parse_opt (int key, char *arg, struct argp_state *state) {
    return 0;
 }
 
-void sigreap (int sig) {
+void sigreap (int argc, char * argv[], int sig) {
    pid_t wait_pid = 0;
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
+   (void)argc;
+   (void)argv;
    (void)sig;
    
 /*    printf("sigreap called\n"); */
@@ -264,17 +196,66 @@ void sigpropogate (int sig) {
 /*    printf("sigpropogate called\n"); */
    kill(child_pid,sig);
 }
-void sigterm (int sig) {
+void sigterm (int argc, char * argv[], int sig) {
+   (void)argc;
+   (void)argv;
 /*    printf("sigterm called\n"); */
    sigpropogate (sig);
-   restart = respawn = 0;
+   respawn = 0;
 }
-void sigrestart (int sig) {
+void sigrestart (int argc, char * argv[], int sig) {
+   char pid_option[]   = "-p";
+   char delay_option[] = "-d";
+   char pid_str[15] = {0};
+   char delay_str[15] = {0};
+   /* +2 for -p <pid>,
+      +2 for -d <delay>,
+      +1 for "-o" or "-r",
+      +1 for trailing null character */
+/*    char *args[argc+2+2+1+1] = {0}; */
+   char **args;
+   size_t i = 0, j = 0;
    /* to avoid warning: unused parameter ‘sig’ [-Wunused-parameter] */
    (void)sig;
 /*    printf("sigrestart called\n"); */
    /* should I be sending this to child? */
-   restart = 1;
+	sprintf(pid_str, "%d", child_pid);
+	sprintf(delay_str, "%d", delay);
+
+	/* +2 for -p <pid>,
+	   +2 for -d <delay>,
+	   +1 for trailing null character */
+	args = xmalloc(argc+5*sizeof(char *));
+
+	for (i = 0; i < (size_t)(argc+5*sizeof(char *)); i++)
+	   args[i] = 0;
+
+	args[0] = argv[0];
+	args[1] = (char *)&pid_option[0];
+	args[2] = (char *)&pid_str[0];
+	args[3] = (char *)&delay_option[0];
+	args[4] = (char *)&delay_str[0];
+	j = 5;
+
+	for (i = 0; i < (size_t)argc; i++) {
+/* 	   printf("index: %d, pointer: %p, %s\n", */
+/* 		 (int)i,(void *)&(argv[i]),argv[i]); */
+	   if (0 == strcmp("--",argv[i])) break;
+	}
+	while (i < (size_t)argc) {
+	  args[j] = argv[i]; j++; i++;
+	}
+
+/* 	for (i = 0; i < (size_t)argc; i++) */
+/* 	  printf("index: %d, argv pointer: %p, %s\n", */
+/* 		(int)i,(void *)&(argv[i]),argv[i]); */
+/* 	i = 0; */
+/* 	while (NULL != args[i]){ */
+/* 	    printf("index: %d, args pointer: %p, %s\n", */
+/* 		  (int)i,(void *)&(args[i]),args[i]); */
+/* 	    i++; */
+/* 	} */
+	execv ( args[0], args );
 }
 void *
 xmalloc (size_t size)
