@@ -7,15 +7,15 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 TERM=linux # for colored openrc output
 
-RUNLEVEL="S" /sbin/rc sysinit
-RUNLEVEL="S" /sbin/rc boot
+RUNLEVEL="S" /sbin/openrc sysinit
+RUNLEVEL="S" /sbin/openrc boot
 
 # Do not start services besides tty's if we're running single-user.
 if [[ ! -n "$(grep single /proc/cmdline)" ]]
 then
    # taken the below from /etc/rc.multi
    # /sbin/asynx_spawn /etc/rc.X
-   /sbin/rc default
+    /sbin/openrc default
 fi
 
 # following this for process management
