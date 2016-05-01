@@ -5,7 +5,7 @@
 /* rcshutdowncmd is an array of constant pointers to char */
 /* else RUNLEVEL="0" /sbin/rc shutdown; exec /sbin/poweroff -f */
 static char *const rcshutdowncmd[] =
-   {"/bin/sh","-c","RUNLEVEL=0 /sbin/openrc shutdown; exec /sbin/poweroff -f",NULL};
+   {"/bin/sh","-c","RUNLEVEL=0 /sbin/openrc shutdown; test -f /run/apcupsd/powerfail && exec halt -f || exec /sbin/poweroff -f",NULL};
 static char *const rcrebootcmd[]   =
    {"/bin/sh","-c","RUNLEVEL=6 /sbin/openrc reboot; exec /sbin/reboot -f",NULL};
 /* rcchildren is an array of an array of 4 constant pointers to char */
